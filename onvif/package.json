@@ -1,0 +1,23 @@
+{
+	"author": "Shipard <info@shipard.cz>",
+	"name": "shn-onvif-tools",
+	"version": "0.1.1",
+	"keywords": [
+		"onvif"
+	],
+	"main": "shn-mqtt-tools",
+	"bin": {
+		"shn-onvif-tools": "shn-onvif-tools.js"
+	},
+	"scripts": {
+		"start": "./shn-onvif-tools.js"
+	},
+	"engines": {
+		"node": ">=0.8.0"
+	},
+	"dependencies": {
+		"node-onvif": ">=0.1.7"
+	},
+	"devDependencies": {},
+	"optionalDependencies": {}
+}

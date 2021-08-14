@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard node lan control service
+After=network.target auditd.service
+
+[Service]
+PIDFile=/var/run/shn-lan-control.pid
+ExecStart=/usr/lib/shipard-node/tools/shn-lan-control.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard-node mqtt engine; ver 0.1
+After=network.target auditd.service
+
+[Service]
+PIDFile=/var/run/shn-mqtt-engine.pid
+ExecStart=/usr/lib/shipard-node/mqtt/shn-mqtt-engine.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

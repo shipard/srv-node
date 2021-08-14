@@ -1,0 +1,5 @@
+host *
+HostkeyAlgorithms ssh-dss,ssh-rsa
+Ciphers +aes128-ctr,aes192-ctr,aes256-ctr,aes128-cbc,3des-cbc
+KexAlgorithms +diffie-hellman-group1-sha1
+PubkeyAcceptedKeyTypes=+ssh-dss

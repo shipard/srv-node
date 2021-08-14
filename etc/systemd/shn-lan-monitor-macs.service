@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard node lan monitoring macs service
+After=network.target auditd.service
+
+[Service]
+PIDFile=/var/run/shn-lan-monitor-macs.pid
+ExecStart=/usr/lib/shipard-node/tools/shn-lan-monitor-macs.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

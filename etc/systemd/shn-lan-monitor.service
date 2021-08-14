@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard node lan monitoring service
+After=network.target auditd.service
+
+[Service]
+PIDFile=/var/run/shn-lan-monitor.pid
+ExecStart=/usr/lib/shipard-node/tools/shn-lan-monitor.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

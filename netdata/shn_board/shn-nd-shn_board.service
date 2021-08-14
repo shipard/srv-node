@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard node netdata board temperature service; ver 0.2
+After=network.target auditd.service
+
+[Service]
+PIDFile=/var/run/shn-nd-shn_board.pid
+ExecStart=/usr/lib/shipard-node/netdata/shn_board/shn-nd-shn_board.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
