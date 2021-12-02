@@ -77,7 +77,7 @@ class Manager extends \Shipard\host\Core
 				$dataStr = json_encode($ib['cfg'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 				foreach ($ib['mac'] as $mac)
 				{
-					$baseFileName = str_replace(':', '-', $mac);
+					$baseFileName = strtolower(str_replace(':', '-', $mac));
 					$fullFileName = $dstPath.'/'.$baseFileName.'.json';
 					file_put_contents($fullFileName, $dataStr);
 				}
@@ -284,7 +284,7 @@ class Manager extends \Shipard\host\Core
 		$this->log ("   df #0 `$df`; sizeToFree `$sizeToFree`");
 
 		$cnt = 0;
-		$ca = new \lib\cameras\Archive ($this->app);
+		$ca = new \Shipard\cameras\Archive ($this->app);
 		while ($sizeToFree > 0)
 		{
 			$ca->removeFirstHourVideo();

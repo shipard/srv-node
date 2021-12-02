@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+	<meta http-equiv='Pragma' content='no-cache'>
+  <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Rack Guard</title>
+  <link href="/sc/bootstrap.min.css" rel="stylesheet">
+	<link href="/sc/fa5/css/all.css" rel="stylesheet">
+  <link rel="stylesheet" href="/sc/style.css?v3">
+	<script src="/sc/cash.min.js?v8.1.0"></script>
+	<script src="/sc/rg.js?v1"></script>
+
+	<style>
+.content-area {
+  display: grid; 
+  grid-template-columns: 1fr; 
+  grid-template-rows: 1fr min-content; 
+  gap: 0px 0px; 
+  grid-template-areas: 
+    "content"
+    "status"; 
+  align-items: stretch; 
+  width: 100%; 
+  height: 100%; 
+	}
+.status { 
+	grid-area: status; 
+	}
+
+	
+.content { 
+	grid-area: content; 
+	background-color: yellow;
+}
+
+
+.status > ul {
+	list-style-type: none;
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+}
+
+
+.status > ul > li {
+	display: inline-block;
+	padding: .2rem .5rem;
+}
+
+font-feature-settings: "tnum" 1;
+font-variant-numeric: tabular-nums;
+
+
+	</style>
+</head>
+
+<body>
+	
+	
+	
+
+
+<div class="content-area">
+  <div class="content" id="rg-area-content-starting">
+		loading...
+	</div>
+  <div class="content" id="rg-area-content-rack" style="display: none;">
+		tady to bude!
+	</div>
+  <div class="status">
+		<ul class="pl-2">
+			<li><i class='fa fa-circle'></i> localhost</li>
+			<li><i class='fa fa-sitemap'></i> LAN</li>
+			<li><i class='fa fa-square'></i> MQTT</li>
+			<li><i class='fa fa-globe'></i> internet</li>
+		</ul>
+		<ul class="float-end pr-2">
+			<li>
+				<i class='fa fa-calendar'></i> <span id='rg-status-clock-date'>--.--.----</span>
+				<i class='fa fa-clock'></i> <span id='rg-status-clock-time'>--:--.--</li>
+		</ul>
+	</div>
+</div>
+
+
+
+</body>
+
+</html>

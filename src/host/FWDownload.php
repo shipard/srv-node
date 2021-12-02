@@ -205,6 +205,11 @@ class FWDownload extends \Shipard\host\Core
 					$fileSize = filesize($fileName);
 					$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/'.$baseName;
 					echo '       '.sprintf('% 8d', $fileSize).' '.$urlFileName."\n";
+					if ($partId === 'ib')
+						echo '         -> mosquitto_pub -t shp/iot-boxes/IOT-BOX-ID/cmd:fwUpgrade -m "'.$fileSize.' http://'.$this->app->nodeCfg['cfg']['mqttServerHost'].'/'.$urlFileName."\"\n";
+					//mosquitto_pub -t shp/iot-boxes/IOT-BOX-ID/cmd:fwUpgrade -m "826384 http://10.11.9.2/fw/ib/stable/iot-box-lan-core/0.91.1-9302944/iot-box-lan-core-esp32-poe-0.91.1-9302944-fw.bin"
+
+
 				}
 			}
 		}

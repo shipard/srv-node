@@ -92,10 +92,10 @@ class LanControlHost
 		if (!isset($devicesClasses[$deviceType]))
 			return NULL;
 
-		$fullClassName = "\\lib\\lanControl\\devices\\".$devicesClasses[$deviceType];
+		$fullClassName = "\\Shipard\\lanControl\\devices\\".$devicesClasses[$deviceType];
 		if (class_exists ($fullClassName))
 		{
-			/** @var \lib\lanControl\devices\LanControlDeviceCore $o */
+			/** @var \Shipard\lanControl\devices\LanControlDeviceCore $o */
 			$o = new $fullClassName ($this->app);
 			$o->setDeviceCfg($deviceCfg);
 			return $o;
@@ -132,7 +132,7 @@ class LanControlHost
 		if (!$allDevices)
 			return;
 
-		snmp_set_oid_numeric_print(SNMP_OID_OUTPUT_NUMERIC);
+		snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
 		snmp_set_quick_print(1);
 		snmp_set_enum_print(1);
 

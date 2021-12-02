@@ -1,13 +1,13 @@
 #!/usr/bin/env php
 <?php
 
-require_once __DIR__.'/../lib/node.php';
+require_once __DIR__.'/../src/node.php';
 
 
 /**
  * Class WatchApp
  */
-class WatchApp extends \lib\Application
+class WatchApp extends \Shipard\Application
 {
 	var $cameraId;
 	var $cameraDir;

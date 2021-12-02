@@ -1,14 +1,14 @@
 #!/usr/bin/env php
 <?php
 
-require_once __DIR__.'/../lib/node.php';
+require_once __DIR__.'/../src/node.php';
 
 
 /**
  * Class WatchVDApp
  * version 0.3
  */
-class WatchVDApp extends \lib\Application
+class WatchVDApp extends \Shipard\Application
 {
 	var $vdDir;
 

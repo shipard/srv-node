@@ -11,7 +11,7 @@ class Subsystems extends \Shipard\host\Core
 {
 	public function check()
 	{
-		$needRestart = $this->checkCerts();
+		$needRestart = 0;//$this->checkCerts();
 
 		$this->checkExpect();
 		$this->checkFtpDaemon();
@@ -26,7 +26,7 @@ class Subsystems extends \Shipard\host\Core
 		$this->checkShipardNodeBoard();
 
 		// -- LC
-		if ($this->app->nodeCfg['cfg']['serverRole'] === 'lc')
+		if (isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC'])
 		{
 			$this->checkCronSymlink('shn-lc');
 		}
@@ -216,7 +216,8 @@ class Subsystems extends \Shipard\host\Core
 
 	function needNginx()
 	{
-		if ($this->app->nodeCfg['cfg']['serverRole'] === 'cams' || $this->app->nodeCfg['cfg']['serverRole'] === 'lc')
+		if ((isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC']) ||
+				(isset($this->app->nodeCfg['cfg']['enableCams']) && $this->app->nodeCfg['cfg']['enableCams']))
 			return TRUE;
 
 		return FALSE;
@@ -239,7 +240,7 @@ class Subsystems extends \Shipard\host\Core
 		if (!is_dir('/var/lib/shipard-node/npm/node_modules'))
 			mkdir('/var/lib/shipard-node/npm/node_modules', 0755, TRUE);
 
-		if ($this->app->nodeCfg['cfg']['serverRole'] === 'lc')
+		if (isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC'])
 		{
 			if (!is_readable('/usr/lib/shipard-node/mqtt/node_modules'))
 				symlink('/var/lib/shipard-node/npm/node_modules', '/usr/lib/shipard-node/mqtt/node_modules');
@@ -256,7 +257,7 @@ class Subsystems extends \Shipard\host\Core
 			}
 		}
 
-		if ($this->app->nodeCfg['cfg']['serverRole'] === 'cams')
+		if (isset($this->app->nodeCfg['cfg']['enableCams']) && $this->app->nodeCfg['cfg']['enableCams'])
 		{
 			if (!is_readable('/usr/lib/shipard-node/onvif/node_modules'))
 				symlink('/var/lib/shipard-node/npm/node_modules', '/usr/lib/shipard-node/onvif/node_modules');
@@ -276,7 +277,8 @@ class Subsystems extends \Shipard\host\Core
 
 	function needNodeJS()
 	{
-		if ($this->app->nodeCfg && isset($this->app->nodeCfg['cfg']['serverRole']) && ($this->app->nodeCfg['cfg']['serverRole'] === 'lc' || $this->app->nodeCfg['cfg']['serverRole'] === 'cams'))
+		if ((isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC']) ||
+				(isset($this->app->nodeCfg['cfg']['enableCams']) && $this->app->nodeCfg['cfg']['enableCams']))
 			return TRUE;
 
 		return FALSE;
@@ -301,7 +303,7 @@ class Subsystems extends \Shipard\host\Core
 
 	function needMqttServer()
 	{
-		if ($this->app->nodeCfg && isset($this->app->nodeCfg['cfg']['serverRole']) && $this->app->nodeCfg['cfg']['serverRole'] === 'lc')
+		if (isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC'])
 			return TRUE;
 
 		return FALSE;
@@ -332,8 +334,8 @@ class Subsystems extends \Shipard\host\Core
 		$c .= "\troot /var/www/shipard-node;\n";
 		$c .= "\tindex index.html index.php;\n";
 
-		$c .= "\tssl_certificate /etc/ssl/crt/shipard.pro/fullchain.pem;\n";
-		$c .= "\tssl_certificate_key /etc/ssl/crt/shipard.pro/privkey.pem;\n";
+		$c .= "\tssl_certificate /var/lib/shipard-node/certs/all.shipard.pro/chain.pem;\n";
+		$c .= "\tssl_certificate_key /var/lib/shipard-node/certs/all.shipard.pro/privkey.pem;\n";
 
 		$c .= "\tssl_dhparam /etc/ssl/crt/dhparam.pem;\n";
 
@@ -366,7 +368,7 @@ class Subsystems extends \Shipard\host\Core
 	{
 		if (!$this->needCamerasSupport())
 			return;
-
+		/*
 		$phpVer = '';
 		if (is_dir('/etc/php/8.0'))
 			$phpVer = '8.0';
@@ -387,11 +389,12 @@ class Subsystems extends \Shipard\host\Core
 		$inotifyCfg .= "extension=inotify.so\n";
 
 		file_put_contents($inotifyCfgFileName, $inotifyCfg);
+		*/
 	}
 
 	function needLanControl()
 	{
-		if (isset($this->app->nodeCfg['cfg']['subsystems']['lanControl']['enabled']) && $this->app->nodeCfg['cfg']['subsystems']['lanControl']['enabled'])
+		if (isset($this->app->nodeCfg['cfg']['enableLC']) && $this->app->nodeCfg['cfg']['enableLC'])
 			return TRUE;
 
 		return FALSE;

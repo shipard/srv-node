@@ -256,7 +256,7 @@ class LanSearchSNMP extends Lan
 		// -- additional info
 		if ($this->device)
 		{
-			$eng = new \lib\lanControl\LanControlHost($this->app);
+			$eng = new \Shipard\lanControl\LanControlHost($this->app);
 			$lcd = $eng->createDevice($this->device);
 			if ($lcd)
 			{
@@ -654,7 +654,7 @@ class LanSearchSNMP extends Lan
 
 	public function setDevice ($host, $device, $deviceKind = FALSE)
 	{
-		snmp_set_oid_numeric_print(SNMP_OID_OUTPUT_NUMERIC);
+		snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
 		snmp_set_quick_print(1);
 		snmp_set_enum_print(1);
 

@@ -26,6 +26,15 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	public function cfgInstallCerts()
+	{
+		$cm = new \Shipard\host\CertsManager($this);
+		if (!$cm->downloadCerts())
+			return $this->err ('ERROR2!');
+
+		return TRUE;
+	}
+
 	public function cfgInit ()
 	{
 		$serverId = intval($this->arg('server-id'));
@@ -161,7 +170,7 @@ class NodeApp extends \Shipard\Application
 
 	public function hostUpload ()
 	{
-		$hm = new \lib\host\Upload($this);
+		$hm = new \Shipard\host\Upload($this);
 		$hm->run();
 		return TRUE;
 	}
@@ -193,7 +202,13 @@ class NodeApp extends \Shipard\Application
 
 		$url = $this->serverCfg['dsUrl'].'/api/objects/call/mac-lan-info-upload';
 		$result = $this->apiSend ($url, $requestData);
-
+		if ($this->debug)
+		{
+			echo "--- send data: [{$url}]\n";
+			echo json_encode($requestData)."\n";
+			echo "------> result:\n";
+			echo json_encode($result)."\n\n";
+		}
 		//echo json_encode($result)."\n\n";
 
 		if ($this->nodeCfg['ver'] !== $result['cfgDataVer'])
@@ -353,6 +368,7 @@ class NodeApp extends \Shipard\Application
 		{
 			case	'cfg-init':     				return $this->cfgInit();
 			case	'cfg-get':     					return $this->getCfgFromServer();
+			case	'cfg-install-certs':    return $this->cfgInstallCerts();
 			case	'cfg-reset-scripts':   	return $this->resetScripts();
 
 			case	'host-check':   				return $this->hostCheck();

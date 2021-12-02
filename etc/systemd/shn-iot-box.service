@@ -1,0 +1,12 @@
+[Unit]
+Description=shipard iot box service
+After=network.target auditd.service
+
+[Service]
+PIDFile=/run/shn-iot-box.pid
+ExecStart=/usr/lib/shipard-node/tools/shn-iot-box.sh
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

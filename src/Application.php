@@ -21,6 +21,7 @@ class Application
 	var $videoDir = '';
 	var $vehicleDetectDir = '';
 	var $rootDir = '';
+	var $redis = NULL;
 
 	public function __construct ($argv)
 	{
@@ -157,6 +158,17 @@ class Application
 		}
 
 		return $resultData;
+	}
+
+	public function redis(): \Redis
+	{
+		if (!$this->redis)
+		{
+			$this->redis = new \Redis ();
+			$this->redis->connect('127.0.0.1');
+		}
+
+		return $this->redis;
 	}
 
 	public function cfgItem ($cfg, $key, $defaultValue = NULL)

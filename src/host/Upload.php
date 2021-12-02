@@ -112,7 +112,9 @@ class Upload extends \Shipard\host\Core
 
 	function uploadFiles ($settings, $files)
 	{
-		$uploadUrl = $settings['dsUrl'].'upload/'.$settings['table'].'/';
+		//'dsUrl' => $this->app->serverCfg['dsUrl']
+		$baseUrl = $settings['dsUrl'] ?? $this->app->serverCfg['dsUrl'];
+		$uploadUrl = $baseUrl.'upload/'.$settings['table'].'/';
 
 		$ch = curl_init();
 		foreach ($files as $fileName)

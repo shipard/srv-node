@@ -48,9 +48,30 @@ class Control
 		$this->responseData['success'] = 1;
 	}
 
+	function sendMqttMessage($topic, $payload)
+	{
+		$mqttHost = '127.0.0.1';
+		$cmd = 'mosquitto_pub -h '.$mqttHost.' -t "'.$topic.'" -m \''.$payload.'\'';
+		//echo $cmd."\n";
+
+		passthru($cmd);
+	}
+
+	function doMqttPublish()
+	{
+		if (!isset($this->requestData['mqttTopic']) || $this->requestData['mqttTopic'] == '')
+			return;
+		if (!isset($this->requestData['mqttPayload']) || $this->requestData['mqttPayload'] == '')
+			return;
+		
+		$this->sendMqttMessage($this->requestData['mqttTopic'], $this->requestData['mqttPayload']);
+	}
+
 	public function run()
 	{
 		if ($this->requestData['actionType'] === 'thing-action')
 			$this->doThingAction();
+		elseif ($this->requestData['actionType'] === 'mqtt-publish')
+			$this->doMqttPublish();
 	}
 }

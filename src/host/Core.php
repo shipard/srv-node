@@ -91,6 +91,15 @@ class Core extends \Shipard\Utility
 		if (!is_dir('/var/lib/shipard-node/upload/sensors'))
 			mkdir('/var/lib/shipard-node/upload/sensors', 0775, TRUE);
 
+		if (!is_dir('/var/lib/shipard-node/upload/iot'))
+			mkdir('/var/lib/shipard-node/upload/iot', 0775, TRUE);
+		
+		if (!is_file('/var/lib/shipard-node/upload/iot/.settings'))
+		{
+			$settingsData = ['table' => 'mac.iot.devices'];
+			file_put_contents('/var/lib/shipard-node/upload/iot/.settings', json_encode($settingsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		}
+	
 		if (!is_dir('/var/www/shipard-node'))
 		{
 			mkdir('/var/www/shipard-node', 0755, TRUE);
@@ -149,7 +158,7 @@ class Core extends \Shipard\Utility
 
 	function needCamerasSupport ()
 	{
-		if (isset($this->app->nodeCfg['cfg']['serverRole']) && $this->app->nodeCfg['cfg']['serverRole'] === 'cams')
+		if (isset($this->app->nodeCfg['cfg']['enableCams']) && $this->app->nodeCfg['cfg']['enableCams'])
 			return TRUE;
 		return FALSE;
 	}

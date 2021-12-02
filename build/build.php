@@ -133,15 +133,16 @@ class ShpdBuildApp
 		$installCmd .= "tar -xzf {$baseFileName}.tgz -C /\n";
 		$installCmd .= "[ -d \"/usr/lib/shipard-node\" ] && rm -rf /usr/lib/shipard-node\n";
 		$installCmd .= "mv /usr/lib/shipard-node-{$versionId} /usr/lib/shipard-node\n";
+		$installCmd .= "/usr/lib/shipard-node/install/install-packages.sh\n";
 		$installCmd .= "echo \"DONE\"\n";
 		$installCmd .= "\nexit 0\n";
 		file_put_contents($installFileNameDebian, $installCmd);
 
 		$cmd = "scp $verFileName $pkgFileName $installFileNameDebian shipardPackages:/var/www/webs/download.shipard.org/shipard-node/server-app-2/";
 		echo "* Copying to server...\n";
-		echo ($cmd);
+		//echo ($cmd);
 		passthru($cmd);
-		echo " done.\n";
+		echo "=== DONE ===\n";
 	}
 
 	public function run ($argv)

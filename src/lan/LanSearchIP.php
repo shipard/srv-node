@@ -40,6 +40,7 @@ class LanSearchIP extends \Shipard\lan\Lan
 		}
 		else
 		{
+			$hosts = [];
 			foreach ($this->lansCfg['ip'] as $ip)
 			{
 				if ($ip['r'] !== $rangeId)
@@ -56,6 +57,9 @@ class LanSearchIP extends \Shipard\lan\Lan
 					$this->addUnknownIp($newIp);
 				}
 			}
+			if (!count($hosts))
+				return;
+
 			$hostsList = implode(' ', $hosts);
 
 			$cmd = '/usr/bin/fping -aqe ' . $hostsList;
