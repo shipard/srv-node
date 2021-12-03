@@ -353,15 +353,9 @@ class Subsystems extends \Shipard\host\Core
 	{
 		if (!is_dir('/var/run/php/'))
 		{
-			$installCmd = "apt-get --assume-yes --quiet install php-fpm";
+			$installCmd = "apt-get --assume-yes --quiet install php8.1-fpm";
 			passthru($installCmd);
 		}
-
-		if (!is_readable('/var/run/php/php-fpm.sock') && is_readable('/var/run/php/php7.1-fpm.sock'))
-			symlink('/var/run/php/php7.1-fpm.sock', '/var/run/php/php-fpm.sock');
-
-		if (!is_readable('/var/run/php/php-fpm.sock') && is_readable('/var/run/php/php7.2-fpm.sock'))
-			symlink('/var/run/php/php7.2-fpm.sock', '/var/run/php/php-fpm.sock');
 	}
 
 	function checkPhpInotify ()

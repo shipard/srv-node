@@ -102,7 +102,7 @@ class ShpdBuildApp
 		if (!$pkg)
 			return $this->err("File package.json not found.");
 
-		$channel = ($live) ? 'live' : 'stable';
+		$channel = ($live) ? 'live' : 'devel';
 		$commit = shell_exec("git log --pretty=format:'%h' -n 1");
 
 		$versionId = $pkg['version'].'-'.$commit;
