@@ -23,11 +23,11 @@ else
     apt --assume-yes --quiet update
 fi
 
-apt install --assume-yes --quiet php8.1-cli php8.1-curl php8.1-json php8.1-intl php8.1-zip php8.1-bcmath php8.1-mbstring php8.1-snmp php8.1-inotify
+apt install --assume-yes --quiet php8.1-cli php8.1-curl php8.1-intl php8.1-zip php8.1-bcmath php8.1-mbstring php8.1-snmp php8.1-inotify
 
 #####
 
-apt install --assume-yes --quiet net-tools
+apt install --assume-yes --quiet net-tools fping
 
 ### redis
 apt install --assume-yes --quiet redis php8.1-redis
