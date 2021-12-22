@@ -542,9 +542,16 @@ class LanSearchSNMP extends Lan
 		$this->createDataBlock($bt);
 		foreach ($this->storages as $item)
 		{
+			if (!$item || !isset($item['blockSize']) || !isset($item['sizeBlocks']) || !isset($item['usedBlocks']))
+				continue;
+
+			$blockSize = intval($item['blockSize']);
+			$sizeBlocks = intval($item['sizeBlocks']);
+			$usedBlocks = intval($item['usedBlocks']);
+
 			$newItem = ['name' => $item['name']];
-			$newItem ['size'] = $item['blockSize'] * $item['sizeBlocks'];
-			$newItem ['used'] = $item['blockSize'] * $item['usedBlocks'];
+			$newItem ['size'] = $blockSize * $sizeBlocks;
+			$newItem ['used'] = $blockSize * $usedBlocks;
 			$this->data[$bt]['items'][] = $newItem;
 		}
 		$this->createDataBlockCheckSum($bt);
