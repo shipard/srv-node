@@ -74,19 +74,22 @@ class Subsystems extends \Shipard\host\Core
 		if (!$this->needFtpDaemon())
 			return;
 
-		if (!is_file('/etc/proftpd/proftpd.conf'))
+		if (!is_file('/etc/proftpd/proftpd.conf') && !is_file('/etc/vsftpd.conf'))
 		{
 			$installCmd = "apt-get --assume-yes --quiet install proftpd";
 			passthru($installCmd);
 		}
 
-		$shnCfgFileName = '/etc/proftpd/conf.d/shn-cameras-pictures.conf';
-		if (!is_file($shnCfgFileName))
+		if (is_file('/etc/proftpd/proftpd.conf'))
 		{
-			symlink('/usr/lib/shipard-node/etc/proftpd/shn-cameras-pictures.conf', $shnCfgFileName);
-			$cmd = "service proftpd restart";
-			shell_exec($cmd);
-		}
+			$shnCfgFileName = '/etc/proftpd/conf.d/shn-cameras-pictures.conf';
+			if (!is_file($shnCfgFileName))
+			{
+				symlink('/usr/lib/shipard-node/etc/proftpd/shn-cameras-pictures.conf', $shnCfgFileName);
+				$cmd = "service proftpd restart";
+				shell_exec($cmd);
+			}
+		}	
 	}
 
 	function needFtpDaemon()
