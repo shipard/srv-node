@@ -160,6 +160,16 @@ class Application
 		return $resultData;
 	}
 
+	function sendMqttMessage($topic, $payload)
+	{
+		$mqttHost = isset($this->nodeCfg['cfg']['mqttServerHost']) ? $this->nodeCfg['cfg']['mqttServerHost'] : '';
+
+		$cmd = 'mosquitto_pub -h '.$mqttHost.' --capath /etc/ssl/certs/ -t "'.$topic.'" -m \''.$payload.'\'';
+		//echo $cmd."\n";
+
+		passthru($cmd);
+	}
+
 	public function redis(): \Redis
 	{
 		if (!$this->redis)

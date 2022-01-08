@@ -93,8 +93,19 @@ class Archive
 							$this->content['video']['firstHour']['hour'] = $idHour;
 						}
 
+						$vfs = filesize($videoFile);
 						$this->content['video']['stats']['filesCnt']++;
-						$this->content['video']['stats']['filesSize'] += filesize($videoFile);
+						$this->content['video']['stats']['filesSize'] += $vfs;
+
+						if (!isset($this->content['video']['stats']['cams'][$idCam]))
+						{
+							$this->content['video']['stats']['cams'][$idCam]['filesSize'] = 0;
+							$this->content['video']['stats']['cams'][$idCam]['filesCnt'] = 0;
+							$camId = $this->app->nodeCfg['cfg']['cameras'][$idCam]['id'] ?? 'cam-'.$idCam;
+							$this->content['video']['stats']['cams'][$idCam]['camId'] = $camId;
+						}
+						$this->content['video']['stats']['cams'][$idCam]['filesSize'] += $vfs;
+						$this->content['video']['stats']['cams'][$idCam]['filesCnt']++;
 
 						$dayFilesCount++;
 						$hourFilesCount++;
@@ -175,9 +186,18 @@ class Archive
 			$statsdData .= 'shn_video.filessize:'.intval($this->content['video']['stats']['filesSize'] / 1073741824).'|g'."\n";
 			$statsdData .= 'shn_video.archivedhours:'.$this->content['video']['stats']['hours'].'|g'."\n";
 
-			$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-			socket_sendto($sock, $statsdData, strlen($statsdData), 0, '127.0.0.1', 8125);
-			socket_close($sock);
+			$topic = 'shp/sensors/va/video-archive-files-size';
+			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesSize']));
+			$topic = 'shp/sensors/va/video-archive-files-count';
+			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesCnt']));
+			$topic = 'shp/sensors/va/video-archive-len-hours';
+			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['hours']));
+
+			foreach ($this->content['video']['stats']['cams'] as $camNdx => $cam)
+			{
+				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/files-size';
+				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams'][$camNdx]['filesSize']));
+			}
 		}
 	}
 
