@@ -46,7 +46,7 @@ class Core extends \Shipard\Utility
 	public function checkCronSymlink ($cfg)
 	{
 		$targetFileName = '/usr/lib/shipard-node/etc/cron.d/'.$cfg.'.conf';
-		chmod($targetFileName, 0640);
+		chmod($targetFileName, 0600);
 		chown($targetFileName, 'root');
 		chgrp($targetFileName, 'root');
 
@@ -55,7 +55,7 @@ class Core extends \Shipard\Utility
 		{
 			symlink($targetFileName, $cronFileName);
 		}
-		chmod($cronFileName, 0640);
+		chmod($cronFileName, 0600);
 	}
 
 	public function checkDirs ()
