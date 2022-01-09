@@ -44,6 +44,7 @@ class Archive
 	{
 		$this->log ('begin scan video');
 		$this->content['video']['firstHour'] = ['date' => '9999-99-99', 'hour' => 99];
+		$this->content['video']['lastHour'] = ['date' => '0000-00-00', 'hour' => -1];
 		$this->content['video']['stats'] = ['filesCnt' => 0, 'filesSize' => 0, 'hours' => 0];
 		$this->content['video']['days'] = [];
 
@@ -93,6 +94,14 @@ class Archive
 							$this->content['video']['firstHour']['hour'] = $idHour;
 						}
 
+						if (
+							$idDate > $this->content['video']['lastHour']['date'] ||
+							($this->content['video']['lastHour']['date'] === $idDate && $idHour > $this->content['video']['lastHour']['hour'])
+						) {
+							$this->content['video']['lastHour']['date'] = $idDate;
+							$this->content['video']['lastHour']['hour'] = $idHour;
+						}
+
 						$vfs = filesize($videoFile);
 						$this->content['video']['stats']['filesCnt']++;
 						$this->content['video']['stats']['filesSize'] += $vfs;
@@ -106,6 +115,11 @@ class Archive
 						}
 						$this->content['video']['stats']['cams'][$idCam]['filesSize'] += $vfs;
 						$this->content['video']['stats']['cams'][$idCam]['filesCnt']++;
+
+						if (!isset($this->content['video']['stats']['cams-all'][$idCam][$idDate][$idHour]))
+							$this->content['video']['stats']['cams-all'][$idCam][$idDate][$idHour] = ['filesSize' => 0, 'filesCnt' => 0];
+						$this->content['video']['stats']['cams-all'][$idCam][$idDate][$idHour]['filesSize'] += $vfs;
+						$this->content['video']['stats']['cams-all'][$idCam][$idDate][$idHour]['filesCnt']++;
 
 						$dayFilesCount++;
 						$hourFilesCount++;
@@ -169,6 +183,19 @@ class Archive
 		$dataString = json_encode($this->content['video'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 		file_put_contents($this->app->camsDir.'/archive/video/archive.json', $dataString);
 
+		// last hour stats
+		$lastHourDateId = $this->content['video']['lastHour']['date'];
+		$lastHourHourId = $this->content['video']['lastHour']['hour'];
+		foreach ($this->content['video']['stats']['cams-all'] as $idCam => $camStats)
+		{
+			if (isset($camStats[$lastHourDateId][$lastHourHourId]))
+			{
+				$this->content['video']['stats']['cams-hour'][$idCam] = $camStats[$lastHourDateId][$lastHourHourId];
+			}
+		}
+
+		unset($this->content['video']['stats']['cams-all']);
+
 		// archive stats
 		$statsFileName = $this->app->camsDir.'/archive/video/archive-stats.json';
 		$currentStatsString = '---';
@@ -180,12 +207,6 @@ class Archive
 
 		//if (sha1($currentStatsString) !== sha1($statsString))
 		{
-			// -- send statsd info
-			$statsdData = '';
-			$statsdData .= 'shn_video.filescount:'.$this->content['video']['stats']['filesCnt'].'|g'."\n";
-			$statsdData .= 'shn_video.filessize:'.intval($this->content['video']['stats']['filesSize'] / 1073741824).'|g'."\n";
-			$statsdData .= 'shn_video.archivedhours:'.$this->content['video']['stats']['hours'].'|g'."\n";
-
 			$topic = 'shp/sensors/va/video-archive-files-size';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesSize']));
 			$topic = 'shp/sensors/va/video-archive-files-count';
@@ -197,6 +218,21 @@ class Archive
 			{
 				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/files-size';
 				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams'][$camNdx]['filesSize']));
+
+				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/hourly-files-size';
+				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams-hour'][$camNdx]['filesSize']));
+
+				if (!$this->content['video']['stats']['cams-hour'][$camNdx]['filesSize'] || !$this->content['video']['stats']['cams-hour'][$camNdx]['filesCnt'])
+				{
+					$alert = [
+						'alertType' => 'mac-lan',
+						'alertKind' => 'mac-lan-cam-video-error',
+						'alertSubject' => 'Camera #'.$camNdx.' / '.$cam['camId'].' video has errors',
+						'alertId' => 'mac-lan-cam-video-' . $camNdx,
+						'payload' => $this->content['video']['stats']['cams-hour'][$camNdx],
+					];
+					$this->app->sendAlert($alert);
+				}	
 			}
 		}
 	}
@@ -206,5 +242,3 @@ class Archive
 		$this->createArchiveVideo();
 	}
 }
-
-
