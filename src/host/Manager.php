@@ -338,7 +338,9 @@ class Manager extends \Shipard\host\Core
 		shell_exec($cmd);
 		$cmd = "mv /usr/lib/shipard-node /usr/lib/shipard-node-old && mv /usr/lib/shipard-node-{$nodePkgInfo['version']} /usr/lib/shipard-node && rm -rf /usr/lib/shipard-node-old";
 
-		//echo $cmd."\n";
+		shell_exec($cmd);
+
+		$cmd = "chmod 0600 /usr/lib/shipard-node/etc/cron.d/*.conf";
 		shell_exec($cmd);
 
 		file_put_contents('/usr/lib/shipard-node/shipard-node.info', json_encode($nodePkgInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));

@@ -289,17 +289,18 @@ class Subsystems extends \Shipard\host\Core
 
 	function checkMqttServer()
 	{
+		if (!is_readable('/usr/bin/mosquitto_sub'))
+		{ // TODO: remove in next version
+			$installCmd = "apt-get --assume-yes --quiet install mosquitto-clients";
+			passthru($installCmd);
+		}
+
 		if (!$this->needMqttServer())
 			return;
 
 		if (!is_file('/etc/mosquitto/mosquitto.conf'))
 		{
 			$installCmd = "apt-get --assume-yes --quiet install mosquitto mosquitto-clients";
-			passthru($installCmd);
-		}
-		elseif (!is_readable('/usr/bin/mosquitto_sub'))
-		{ // TODO: remove in next version
-			$installCmd = "apt-get --assume-yes --quiet install mosquitto-clients";
 			passthru($installCmd);
 		}
 	}

@@ -27,7 +27,7 @@ apt install --assume-yes --quiet php8.1-cli php8.1-curl php8.1-intl php8.1-zip p
 
 #####
 
-apt install --assume-yes --quiet net-tools fping
+apt install --assume-yes --quiet net-tools fping mosquitto-clients
 
 ### redis
 apt install --assume-yes --quiet redis php8.1-redis
