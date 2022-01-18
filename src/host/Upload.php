@@ -64,6 +64,9 @@ class Upload extends \Shipard\host\Core
 				}
 			}
 
+			if ($sensorData['value'] === '' || $sensorData['value'] === false)
+				$sensorData['value'] = 0;
+
 			$tsdbData .= ' value='.$sensorData['value'];
 			$tsdbData .= ' '.$sensorData['time'];
 			$tsdbData .= "\n";
@@ -112,7 +115,6 @@ class Upload extends \Shipard\host\Core
 
 	function uploadFiles ($settings, $files)
 	{
-		//'dsUrl' => $this->app->serverCfg['dsUrl']
 		$baseUrl = $settings['dsUrl'] ?? $this->app->serverCfg['dsUrl'];
 		$uploadUrl = $baseUrl.'upload/'.$settings['table'].'/';
 

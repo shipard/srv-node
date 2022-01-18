@@ -3,6 +3,7 @@
 var mqtt = require('mqtt')
 		, exec = require('child_process').exec
 		, fs = require('fs')
+		, https = require('https')
 		, redis = require("redis")
 		, crypto = require('crypto')
 		, log4js = require('log4js')
@@ -13,6 +14,7 @@ var mqtt = require('mqtt')
 let mqtt_url = 'mqtt://localhost:1883';
 let auth = (mqtt_url.auth || ':').split(':');
 let configuration = {};
+let serverConfiguration = {};
 let topics = [];
 
 let ibInfoTopic = 'shp/iot-boxes-info';
@@ -27,6 +29,8 @@ topics.push(topicZigbee);
 // -- Load config
 let configFile = '/etc/shipard-node/mqtt-engine.json';
 configuration = JSON.parse(fs.readFileSync(configFile).toString());
+serverConfiguration = JSON.parse(fs.readFileSync('/etc/shipard-node/server.json').toString());
+serverDeviceId = fs.readFileSync('/etc/e10-device-id.cfg').toString();
 
 for(var key in configuration['listenTopics'])
 {
@@ -36,9 +40,7 @@ for(var key in configuration['listenTopics'])
 
 
 let iotEngineInfo = {};
-
-//const redisClient = redis.createClient();
-
+loadInfo();
 
 
 // -- Create MQTT Client
@@ -78,9 +80,9 @@ mqttClient.on('connect', function() {
 		if (topic in configuration['eventsOn'])
 			doEventOn(topic, message.toString());
 
-		if (topic.startsWith('shp/places/'))
+		if (topic.startsWith('shp/setups/'))
 		{
-			doPlace(topic, message.toString());
+			doSetup(topic, message.toString());
 			return;
 		}	
 
@@ -94,7 +96,8 @@ mqttClient.on('connect', function() {
 				onSensors(topic, message.toString());
 		}
 		else{
-			console.log ("UNREGISTERED TOPIC `"+topic+"`: "+message.toString());
+			if (!(topic in configuration['eventsOn']))
+				console.log ("UNREGISTERED TOPIC `"+topic+"`: "+message.toString());
 		}
 	});
 
@@ -103,7 +106,7 @@ mqttClient.on('connect', function() {
 
 function puts(error, stdout, stderr)
 {
-	console.log(stdout);
+	//console.log(stdout);
 }
 
 
@@ -165,14 +168,14 @@ function doIbInfo(topic, message)
 		let now = new Date().getTime();
 		let fileName = '/var/lib/shipard-node/upload/lan/iot-box-'+payloadData['device']+'-'+payloadData['type']+'-'+now+'.json';
 
-		fs.writeFile(fileName, ibDataStr, function (err) {
+		fs.writeFileSync(fileName, ibDataStr, function (err) {
 			if (err)
 				console.log(err);
 		});
 
 		let iotBoxInfoDataStr = JSON.stringify(payloadData);
 		fileName = '/var/lib/shipard-node/tmp/lan-device-'+payloadData['device']+'-iotBoxInfo.json';
-		fs.writeFile(fileName, iotBoxInfoDataStr, function (err) {
+		fs.writeFileSync(fileName, iotBoxInfoDataStr, function (err) {
 			if (err)
 				console.log(err);
 		});
@@ -182,25 +185,25 @@ function doIbInfo(topic, message)
 	}
 }
 
-function doPlace(topic, payload)
+function doSetup(topic, payload)
 {
-	let placeId = topic;
+	let setupId = topic;
 	let operation = '';
-	if (configuration['topics'][placeId] === undefined)
+	if (configuration['topics'][setupId] === undefined)
 	{
 		let parts = topic.split('/');
 		operation = parts.pop();
-		placeId = parts.join('/');
+		setupId = parts.join('/');
 
-		if (configuration['topics'][placeId] === undefined)
+		if (configuration['topics'][setupId] === undefined)
 		{
-			console.log ("invalid place");
+			console.log ("invalid setup");
 			return;
 		}
 
 		if (operation !== 'set' && operation !== 'get')
 		{
-			console.log ("invalid place operation");
+			console.log ("invalid setup operation");
 			return;
 		}
 	}
@@ -210,26 +213,27 @@ function doPlace(topic, payload)
 		return;
 	}
 	
-	console.log ("PLACE: "+placeId+", operation: `"+operation+"`");
+	//console.log ("SETUP: "+setupId+", operation: `"+operation+"`");
 
 	let payloadData = JSON.parse(payload);
 	if (operation === 'set')
 	{
-		doPlaceSet(placeId, payloadData);
+		doSetupSet(setupId, payloadData);
+		
 		return;
 	}
 	else if (operation === 'get')
 	{
-		doPlaceGet(placeId);
+		doSetupGet(setupId);
 	}
 }
 
-function doPlaceSet(placeId, payloadData)
+function doSetupSet(setupId, payloadData)
 {
-	const placeCfg = configuration['topics'][placeId];
-	if (placeCfg === undefined)
+	const setupCfg = configuration['topics'][setupId];
+	if (setupCfg === undefined)
 	{
-		console.log("Unknown placeId "+placeId);
+		console.log("Unknown setupId "+setupId);
 		return;
 	}
 
@@ -242,27 +246,31 @@ function doPlaceSet(placeId, payloadData)
 			return;
 		}
 
-		setScene(placeId, sceneId);
+		setScene(setupId, sceneId);
 	}
 }
 
-function setScene(placeId, sceneId)
+function setScene(setupId, sceneId)
 {
-	let placeInfo = getInfo(placeId);
-	placeInfo['scene'] = sceneId;
-	setInfo(placeId, placeInfo);
+	let setupInfo = getInfo(setupId);
+	setupInfo['scene'] = sceneId;
+	setInfo(setupId, setupInfo);
 	
-	doPlaceGet(placeId);
+	doSetupGet(setupId);
 	
 	//console.log("SET SCENE "+sceneId);
 	const sceneCfg = configuration['topics'][sceneId];
 	runDoEvents(sceneCfg['do']);
+
+	const setupCfg = configuration['topics'][setupId];
+
+	sendToServer({'serverId': serverConfiguration.serverId, 'type': 'set-scene', 'setup': setupCfg.ndx, 'scene': sceneCfg.ndx});
 }
 
-function doPlaceGet(placeId)
+function doSetupGet(setupId)
 {
-	const placeInfo = getInfo(placeId);
-	mqttClient.publish (placeId, JSON.stringify(placeInfo), { /*qos: 0, retain: false*/ }, (error) => {
+	const setupInfo = getInfo(setupId);
+	mqttClient.publish (setupId, JSON.stringify(setupInfo), { /*qos: 0, retain: false*/ }, (error) => {
 		if (error) {
 			console.error(error)
 		}
@@ -312,7 +320,7 @@ function doSensor(topic, payload)
 
 	let fileName = '/var/lib/shipard-node/upload/sensors/sensors-'+now+'-'+'-'+hash+'.json';
 
-	fs.writeFile(fileName, sensorInfoDataStr, function (err) {
+	fs.writeFileSync(fileName, sensorInfoDataStr, function (err) {
 		if (err)
 			console.log(err);
 	});
@@ -360,7 +368,7 @@ function doZigbee (topic, payload)
 
 	if (uploadFileName !== '')
 	{
-		fs.writeFile(uploadFileName, uploadString, function (err) {
+		fs.writeFileSync(uploadFileName, uploadString, function (err) {
 			if (err)
 				console.log(err);
 		});
@@ -372,28 +380,33 @@ function doZigbee (topic, payload)
 async function doEventOn(topic, payload)
 {
 	let event = configuration['eventsOn'][topic];
-	let payloadData = JSON.parse(payload);
 	
 	if (event['scene'] !== undefined)
 	{
-		console.log ("!!! SCENE!!!");
-		//const placeId = payloadData['place'];
-		const placeInfo = getInfo(event['place']);
-		console.log("placeInfo: ");
-		console.log(placeInfo);
-		if (placeInfo['scene'] === undefined)
+		//console.log ("!!! SCENE !!!");
+		const setupInfo = getInfo(event['setup']);
+		//console.log("setupInfo: ", setupInfo);
+
+		if (setupInfo['scene'] === undefined)
 		{
-			console.log("Invalid place section "+event['place']);
+			//console.log("Unknown place on setup "+event['setup']);
 			return;
 		}
 	
-		if (placeInfo['scene'] !== event['scene'])
+		if (setupInfo['scene'] !== event['scene'])
 		{
-			console.log("not valid on this scene");
+			//console.log("not valid on this scene");
 			return;
 		}
 	}
 	
+	let payloadData = {};
+	try {
+		payloadData = JSON.parse(payload);
+	}	catch (e) {  
+		payloadData = {'_payload': payload};
+		console.log('invalid json');  
+	}
 	if (payloadData['action_group'] !== undefined)
 		return;
 
@@ -403,12 +416,19 @@ async function doEventOn(topic, payload)
 	{
 		let onItem = event['on'][onItemId];
 
-		if (onItem['dataItem'] !== undefined && onItem['dataItem'] in payloadData)
+		if (onItem['type'] === 0 || onItem['type'] === 4)
 		{
-			if (payloadData[onItem['dataItem']] == onItem['dataValue'])
+			if (onItem['dataItem'] !== undefined && onItem['dataItem'] in payloadData)
 			{
-				runDoEvents(onItem['do']);
+				if (payloadData[onItem['dataItem']] == onItem['dataValue'])
+				{
+					runDoEvents(onItem['do']);
+				}
 			}
+		}
+		else
+		{
+			runDoEvents(onItem['do'], topic, payloadData);
 		}
 	}
 }
@@ -422,7 +442,7 @@ function doDevice(topic, payload)
 	setInfo(topic, payloadData);
 }
 
-function runDoEvents(doEvents)
+function runDoEvents(doEvents, srcTopic, srcPayload)
 {
 	for(let doItemId in doEvents)
 	{
@@ -457,6 +477,16 @@ function runDoEvents(doEvents)
 				});
 			}
 		}
+		else if (doItemId === 'sendSetupRequest')
+		{
+			//console.log('sendSetupRequest: ', doItem);
+			for(let setupId in doItem)
+			{
+				let doActionItem = doItem[setupId];
+				//console.log('sendSetupRequestAction: ', setupId, doActionItem);
+				doSetupActions(setupId, doActionItem['actions'], srcTopic, srcPayload);
+			}
+		}	
 		else if (doItemId === 'startLoop')
 		{
 			if (loops[doItem['id']] === undefined)
@@ -470,6 +500,75 @@ function runDoEvents(doEvents)
 		}
 	}	
 }
+
+function doSetupActions(setupId, actions, srcTopic, srcPayload)
+{
+	const setupCfg = configuration['topics'][setupId];
+	//console.log("SETUP: ", setupId, setupCfg);
+	for(let actionId in actions)
+	{
+		let actionItem = actions[actionId];
+		//console.log('  --: ', actionItem, srcPayload);
+
+		const requestData = {'setup': setupCfg.ndx, 'request': actionItem.request, 'srcPayload': srcPayload, 'srcTopic': srcTopic};
+		doSetupRequest(setupId, setupCfg, requestData);
+	}
+}
+
+function doSetupRequest(setupId, setupCfg, requestData)
+{
+	//console.log(requestData);
+	const data = JSON.stringify(requestData);
+	const apiUrl = serverConfiguration.dsUrl + 'api/objects/call/iot-mac-setup-request';
+
+	const options = {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': data.length,
+			'e10-api-key': serverConfiguration.apiKey,
+			'e10-device-id': serverDeviceId
+		}
+	};
+
+	const req = https.request(apiUrl, options, res => {
+		//console.log('statusCode: ', res.statusCode);
+		//console.log('headers: ', res.headers);
+
+		let data = '';
+
+		res.on('data', d => {
+			data += d;
+		});
+
+		res.on('end', () => {
+			//console.log('Response from ', setupId);
+			//console.log(data);
+			const parsedData = JSON.parse(data);
+			if (parsedData['callActions'] !== undefined)
+			{
+				for(let actionId in parsedData['callActions'])
+				{
+					const actionItem = parsedData['callActions'][actionId];
+					//console.log ("   -> PUBLISH: ", actionItem['topic'], JSON.stringify(actionItem['payload']));
+					mqttClient.publish (actionItem['topic'], JSON.stringify(actionItem['payload']), { qos: 0, retain: false }, (error) => {
+						if (error) {
+							console.error(error)
+						}
+					});		
+				}
+			}		
+		});
+	});
+	
+	req.on('error', error => {
+		console.error(error);
+	})
+	
+	req.write(data);
+	req.end();
+}
+
 
 loopCounters = {};
 function runEventLoopItem(loop)
@@ -578,3 +677,78 @@ function doValue(topic, payload)
 		}
 	}
 }
+
+
+function sendToServer(dataStruct)
+{
+	data = JSON.stringify(dataStruct);
+	const options = {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Content-Length': data.length,
+			'e10-api-key': serverConfiguration.apiKey,
+			'e10-device-id': serverDeviceId
+		}
+	};
+
+	const apiUrl = serverConfiguration.dsUrl + 'api/objects/call/iot-mac-set-state';
+	const req = https.request(apiUrl, options, res => {
+		//console.log('statusCode: ', res.statusCode);
+		//console.log('headers: ', res.headers);
+
+		let data = '';
+
+		res.on('data', d => {
+			data += d;
+		});
+
+		res.on('end', () => {
+			//console.log(data);
+		});
+	});
+	
+	req.on('error', error => {
+		console.error(error);
+	})
+	
+	req.write(data);
+	req.end();
+}
+
+function saveInfo()
+{
+	const fileName = '/var/lib/shipard-node/tmp/mqtt-engine-info.json';
+	
+	const data = JSON.stringify(iotEngineInfo);
+	//console.log(data);
+	fs.writeFileSync(fileName, data, function (err) {
+		if (err)
+			console.log(err);
+	});
+}
+
+function loadInfo()
+{
+	const fileName = '/var/lib/shipard-node/tmp/mqtt-engine-info.json';
+	try {
+		const fileContent = fs.readFileSync(fileName).toString();
+		iotEngineInfo = JSON.parse(fileContent);
+	}	
+	catch (err) {
+		//console.error(err)
+		iotEngineInfo = {};
+	}
+}
+
+process.on('SIGINT', () => {
+	saveInfo();
+  //console.log("### SIGINT ###");
+	process.exit();
+});
+
+process.on('SIGTERM', () => {
+	saveInfo();
+  //console.log("### SIGTERM ###");
+	process.exit();
+});

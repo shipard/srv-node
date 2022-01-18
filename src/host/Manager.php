@@ -319,6 +319,9 @@ class Manager extends \Shipard\host\Core
 		if (!$currentVersionInfo || $currentVersionInfo['version'] !== $nodePkgInfo['version'])
 			$doUpgrade = TRUE;
 
+		if (intval($this->app->arg('force')))
+			$doUpgrade = TRUE;
+
 		if (!$doUpgrade)
 			return;
 
