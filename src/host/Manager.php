@@ -348,7 +348,9 @@ class Manager extends \Shipard\host\Core
 
 		file_put_contents('/usr/lib/shipard-node/shipard-node.info', json_encode($nodePkgInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
-		$this->check();
+		//$this->check();
+		$cmd = 'shipard-node server-check';
+		shell_exec($cmd);
 	}
 
 	public function setServer($serverId, $dsUrl, $apiKey)

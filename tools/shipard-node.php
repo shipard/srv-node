@@ -375,6 +375,7 @@ class NodeApp extends \Shipard\Application
 			case	'host-cleanup-daily':   return $this->cleanupDaily();
 			case	'host-cleanup-hourly':	return $this->cleanupHourly();
 			case	'server-backup':  			return $this->serverBackup();
+			case	'server-check':   			return $this->hostCheck();
 			case	'server-upgrade':  			return $this->serverUpgrade();
 			case	'host-reboot':  				return $this->hostReboot();
 			case	'host-upload':  				return $this->hostUpload();
