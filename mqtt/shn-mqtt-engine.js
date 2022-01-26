@@ -77,7 +77,7 @@ mqttClient.on('connect', function() {
 			return;
 		}	
 
-		if (topic in configuration['eventsOn'])
+		if (configuration['eventsOn'] !== undefined && topic in configuration['eventsOn'])
 			doEventOn(topic, message.toString());
 
 		if (topic.startsWith('shp/setups/'))
@@ -92,11 +92,11 @@ mqttClient.on('connect', function() {
 			if (topicCfg['type'] === 'device')
 				doDevice(topic, message.toString());
 
-			if (topic in configuration['onSensors'])
+			if (configuration['onSensors'] !== undefined && topic in configuration['onSensors'])
 				onSensors(topic, message.toString());
 		}
 		else{
-			if (!(topic in configuration['eventsOn']))
+			if (configuration['eventsOn'] !== undefined && !(topic in configuration['eventsOn']))
 				console.log ("UNREGISTERED TOPIC `"+topic+"`: "+message.toString());
 		}
 	});
@@ -435,6 +435,8 @@ async function doEventOn(topic, payload)
 
 function doDevice(topic, payload)
 {
+	if (configuration['eventsOn'] === undefined || configuration['eventsOn'][topic] === undefined)
+		return;
 	let event = configuration['eventsOn'][topic];
 	let payloadData = JSON.parse(payload);
 	if (payloadData['action_group'] !== undefined)
@@ -651,33 +653,6 @@ function checkStopLoop (topic, payload)
 		//console.log("STOP LOOP: "+removeItem);
 	}
 }
-
-function doValue(topic, payload)
-{
-	// -- search thing
-	for(let thingId in configuration['things'])
-	{
-		let thingCfg = configuration['things'][thingId];
-		for (let valueTopic in thingCfg['items']['values'])
-		{
-			//console.log("search thing topic: "+valueTopic);
-			if (valueTopic === topic)
-			{
-				let safePayload = payload.replace(/[^\x19-\x7F]/g,"").replace(/\u0000/g, '\\0');
-
-				let cmd = '/usr/lib/shipard-node/tools/shn-iot-thing.php value';
-				cmd += ' --type="' + thingCfg['coreType'] + '"';
-				cmd += ' --topic="'+valueTopic+'"';
-				cmd += ' --payload="'+safePayload+'"';
-				//console.log("RUN CMD: " +cmd);
-				exec(cmd, puts);
-
-				return;
-			}
-		}
-	}
-}
-
 
 function sendToServer(dataStruct)
 {
