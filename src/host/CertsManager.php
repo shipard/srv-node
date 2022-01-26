@@ -39,6 +39,7 @@ class CertsManager extends \Shipard\host\Core
 		if (!count($certs))
 			return;
 
+		$needRestart = 0;	
 		foreach ($certs as $certName => $cert)
 		{
 			$certPath = $this->certsBasePath.$certName.'/';
@@ -49,15 +50,32 @@ class CertsManager extends \Shipard\host\Core
 
 			foreach ($cert['files'] as $fileName => $fileContent)
 			{
+				$oldFileCheckSum = sha1_file($certPath.$fileName);
+				$newFileCheckSum = sha1($fileContent);
+
+				if ($oldFileCheckSum !== $newFileCheckSum)
+					$needRestart++;
+				
 				file_put_contents($certPath.$fileName, $fileContent);
 			}
+		}
+
+		if ($needRestart)
+		{
+			$restartServices = [];
+			if (is_dir('/etc/nginx'))	
+				$restartServices[] = 'nginx';
+
+			if (is_dir('/etc/mosquitto'))
+				$restartServices[] = 'mosquitto';
+
+			$this->restartHostServices($restartServices, 'reload');
 		}
 	}
 
 	public function run()
 	{
 		$this->check();
-		//$this->installCertificates();
 	}
 }
 

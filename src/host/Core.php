@@ -168,9 +168,9 @@ class Core extends \Shipard\Utility
 		shell_exec('/usr/sbin/service '.$service.' '.$operation);
 	}
 
-	protected function restartHostServices($services)
+	protected function restartHostServices($services, $operation = 'restart')
 	{
 		foreach ($services as $service)
-			$this->restartHostService($service);
+			$this->restartHostService($service, $operation);
 	}
 }

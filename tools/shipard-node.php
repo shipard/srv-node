@@ -30,7 +30,7 @@ class NodeApp extends \Shipard\Application
 	{
 		$cm = new \Shipard\host\CertsManager($this);
 		if (!$cm->downloadCerts())
-			return $this->err ('ERROR2!');
+			return $this->err ('Download certificates failed...');
 
 		return TRUE;
 	}
