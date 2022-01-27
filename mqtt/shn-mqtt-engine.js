@@ -191,13 +191,14 @@ function doSetup(topic, payload)
 	let operation = '';
 	if (configuration['topics'][setupId] === undefined)
 	{
+		//console.log ("invalid setup 1: `"+setupId+'`');
 		let parts = topic.split('/');
 		operation = parts.pop();
 		setupId = parts.join('/');
 
 		if (configuration['topics'][setupId] === undefined)
 		{
-			console.log ("invalid setup");
+			//console.log ("invalid setup 2: `"+setupId+'`');
 			return;
 		}
 
@@ -422,7 +423,7 @@ async function doEventOn(topic, payload)
 			{
 				if (payloadData[onItem['dataItem']] == onItem['dataValue'])
 				{
-					runDoEvents(onItem['do']);
+					runDoEvents(onItem['do'], topic, payloadData);
 				}
 			}
 		}
@@ -512,7 +513,11 @@ function doSetupActions(setupId, actions, srcTopic, srcPayload)
 		let actionItem = actions[actionId];
 		//console.log('  --: ', actionItem, srcPayload);
 
-		const requestData = {'setup': setupCfg.ndx, 'request': actionItem.request, 'srcPayload': srcPayload, 'srcTopic': srcTopic};
+		let requestData = {'setup': setupCfg.ndx, 'request': actionItem.request, 'srcPayload': srcPayload, 'srcTopic': srcTopic};
+		if (srcTopic !== undefined && configuration['topics'][srcTopic] !== undefined)
+		{
+			requestData['srcTopicInfo'] = configuration['topics'][srcTopic];
+		}
 		doSetupRequest(setupId, setupCfg, requestData);
 	}
 }
