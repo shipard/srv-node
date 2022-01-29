@@ -173,4 +173,14 @@ class Core extends \Shipard\Utility
 		foreach ($services as $service)
 			$this->restartHostService($service, $operation);
 	}
+
+	public function netdataEtcDir()
+	{
+		if (is_dir('/opt/netdata/etc/netdata'))
+			return '/opt/netdata/etc/netdata/';
+		if (is_dir('/etc/netdata'))
+			return '/etc/netdata/';
+
+		return FALSE;	
+	}
 }

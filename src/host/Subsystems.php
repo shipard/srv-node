@@ -327,11 +327,23 @@ class Subsystems extends \Shipard\host\Core
 
 	function nginxHostConfig()
 	{
+		$c = '';
+		$c .= "# primary shipard-node server; config; ver 0.5\n";
+
+		if (isset($this->app->nodeCfg['cfg']['httpProxies']))
+		{
+			foreach ($this->app->nodeCfg['cfg']['httpProxies'] as $hp)
+			{
+				$c .= "upstream backend-{$hp['id']} {\n";
+				$c .= "\tserver {$hp['destIP']}:{$hp['destPort']};\n";
+				$c .= "\tkeepalive 64;\n";
+				$c .= "}\n\n";
+			}
+		}
+
 		$serverName = $this->app->nodeCfg['cfg']['fqdn'];
 		$httpsPort = (isset($this->app->nodeCfg['cfg']['httpsPort']) && intval($this->app->nodeCfg['cfg']['httpsPort'])) ? $this->app->nodeCfg['cfg']['httpsPort'] : 443;
-		$c = '';
 
-		$c .= "# primary shipard-node server; config; ver 0.4\n";
 		$c .= "server {\n";
 		$c .= "\tlisten $httpsPort ssl http2;\n";
 		$c .= "\tserver_name $serverName;\n";
@@ -348,6 +360,29 @@ class Subsystems extends \Shipard\host\Core
 
 		$c .= "\tinclude /usr/lib/shipard-node/etc/nginx/shn-host.conf;\n";
 		$c .= "\tinclude /usr/lib/shipard-node/etc/nginx/shn-https.conf;\n";
+
+		if (isset($this->app->nodeCfg['cfg']['httpProxies']))
+		{
+			$c .= "\n";
+			$c .= "\t".'location ~ /netdata/(?<behost>.*)/(?<ndpath>.*) {'."\n";
+			$c .= "\t\t".'proxy_set_header X-Forwarded-Host $host;'."\n";
+      $c .= "\t\t".'proxy_set_header X-Forwarded-Server $host;'."\n";
+      $c .= "\t\t".'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;'."\n";
+      $c .= "\t\t".'proxy_http_version 1.1;'."\n";
+      $c .= "\t\t".'proxy_pass_request_headers on;'."\n";
+      $c .= "\t\t".'proxy_set_header Connection "keep-alive";'."\n";
+      $c .= "\t\t".'proxy_store off;'."\n";
+      $c .= "\t\t".'proxy_pass http://backend-$behost/$ndpath$is_args$args;'."\n";
+			$c .= "\t\t".'gzip on;'."\n";
+      $c .= "\t\t".'gzip_proxied any;'."\n";
+      $c .= "\t\t".'gzip_types *;'."\n";
+    	$c .= "\t".'}'."\n\n";
+
+			$c .= "\t".'location ~ /netdata/(?<behost>.*) {'."\n";
+			$c .= "\t\t".'return 301 /netdata/$behost/;'."\n";
+	    $c .= "\t".'}'."\n";
+		}
+
 		$c .= "}\n\n";
 
 		return $c;
@@ -461,31 +496,6 @@ class Subsystems extends \Shipard\host\Core
 
 	function checkShipardNodeBoard()
 	{
-		// -- netdata video stats
-		if ($this->needCamerasSupport())
-		{
-			if (is_dir('/etc/netdata/statsd.d'))
-			{
-				if ($this->copyFileWithCheck('shn_video.conf', '/usr/lib/shipard-node/netdata/shn_board/stats.d', '/etc/netdata/statsd.d'))
-				{
-					exec ('service netdata restart');
-				}
-			}
-		}
-
-		if (!is_readable('/etc/armbianmonitor/datasources/soctemp')
-				&& !is_readable('/sys/class/thermal/thermal_zone0/temp')
-		)
-
-		if (is_dir('/etc/netdata/statsd.d'))
-		{
-			$this->checkHostService('shn-nd-shn_board', '/usr/lib/shipard-node/netdata/shn_board');
-
-			if ($this->copyFileWithCheck('shn_board.conf', '/usr/lib/shipard-node/netdata/shn_board/stats.d', '/etc/netdata/statsd.d'))
-			{
-				exec ('service netdata restart');
-			}
-		}
 	}
 
 	function tftpHomeDir()

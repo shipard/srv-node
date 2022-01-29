@@ -132,15 +132,20 @@ class Manager extends \Shipard\host\Core
 
 	public function lanMonitoringGetSnmpCfg()
 	{
-		if (!is_dir('/etc/netdata/node.d'))
+		$netdataEtcDir = $this->netdataEtcDir();
+
+		if (!$netdataEtcDir)
 			return FALSE;
 
 		$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-lan-monitoring-snmp/'.$this->app->serverCfg['serverId'];
 		$cfg = $this->app->apiCall($url);
 
-		if (!$cfg || !$cfg['success'] || !isset($cfg['cfg']['realtime']) || !count($cfg['cfg']['realtime']))
-			return FALSE;
+		print_r($cfg);
 
+		if (!$cfg || !$cfg['success'] || !isset($cfg['cfg']['realtime']) || !count($cfg['cfg']['realtime']))
+		{
+			return FALSE;
+		}	
 
 		$snmpConf = [
 			'enable_autodetect' => FALSE,
@@ -150,7 +155,7 @@ class Manager extends \Shipard\host\Core
 		$snmpConfTxt = json_encode($snmpConf,JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		$newCheckSum = sha1($snmpConfTxt);
 
-		$fn = '/etc/netdata/node.d/snmp.conf';
+		$fn = $netdataEtcDir.'node.d/snmp.conf';
 
 		$currentCheckSum = '';
 		if (is_readable($fn))
@@ -167,19 +172,20 @@ class Manager extends \Shipard\host\Core
 
 	public function netDataAlarmsApiOn()
 	{
-		if (!is_dir('/etc/netdata/node.d'))
+		$netdataEtcDir = $this->netdataEtcDir();
+		if (!$netdataEtcDir)
 			return FALSE;
 
-		if (!is_readable('/etc/netdata/health_alarm_notify.conf'))
+		if (!is_readable($netdataEtcDir.'health_alarm_notify.conf'))
 		{
 			echo "copy new health_alarm_notify.conf\n";
-			copy('/etc/netdata/orig/health_alarm_notify.conf', '/etc/netdata/health_alarm_notify.conf');
+			copy($netdataEtcDir.'orig/health_alarm_notify.conf', $netdataEtcDir.'health_alarm_notify.conf');
 		}
 
-		$str = file_get_contents('/etc/netdata/health_alarm_notify.conf');
+		$str = file_get_contents($netdataEtcDir.'health_alarm_notify.conf');
 		if (!$str || $str === '')
 		{
-			echo "ERROR: file `/etc/netdata/health_alarm_notify.conf` is not readable\n";
+			echo "ERROR: file `{$netdataEtcDir}health_alarm_notify.conf` is not readable\n";
 			return FALSE;
 		}
 
@@ -231,7 +237,7 @@ class Manager extends \Shipard\host\Core
 		if ($changes)
 		{
 			echo "CHANGES: ".$changes."\n";
-			file_put_contents('/etc/netdata/health_alarm_notify.conf', $str);
+			file_put_contents($netdataEtcDir.'health_alarm_notify.conf', $str);
 			echo "done, test delivery by run `/usr/libexec/netdata/plugins.d/alarm-notify.sh test`\n";
 		}
 
