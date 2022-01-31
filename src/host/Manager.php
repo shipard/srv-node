@@ -127,6 +127,11 @@ class Manager extends \Shipard\host\Core
 			file_put_contents($fn, $dashboardCode);
 		}
 
+		if (!is_dir('/var/www/shipard-node/dashboards/'))
+		{
+			symlink('/var/lib/shipard-node/www/dashboards', '/var/www/shipard-node/dashboards');
+		}
+
 		return TRUE;
 	}
 

@@ -45,7 +45,7 @@ class WebApplication extends \Shipard\Application
 
 	protected function error ($status, $msg)
 	{
-		header ('X-Frame-Options: SAMEORIGIN');
+		//header ('X-Frame-Options: SAMEORIGIN');
 		header("HTTP/1.1 " . $status.' '.$msg);
 		echo ("ERROR ".$status.': '.$msg);
 	}
@@ -67,7 +67,7 @@ class WebApplication extends \Shipard\Application
 
 	public function sendJson ($data)
 	{
-		header ('X-Frame-Options: SAMEORIGIN');
+		//header ('X-Frame-Options: SAMEORIGIN');
 		header ("Content-type: " . 'application/json');
 		header ("HTTP/1.1 200 OK");
 
@@ -86,7 +86,7 @@ class WebApplication extends \Shipard\Application
 
 	public function sendHtml ($text)
 	{
-		header ('X-Frame-Options: SAMEORIGIN');
+		//header ('X-Frame-Options: SAMEORIGIN');
 		header ("Content-type: " . 'text/html');
 		header ("HTTP/1.1 200 OK");
 
@@ -152,7 +152,7 @@ class WebApplication extends \Shipard\Application
 
 		if (is_readable($fullFileName))
 		{
-			header('X-Frame-Options: SAMEORIGIN');
+			//header('X-Frame-Options: SAMEORIGIN');
 			header("Content-type: " . 'image/jpeg');
 			header('X-Accel-Redirect: ' . $imgPath);
 			return '';
@@ -189,7 +189,7 @@ class WebApplication extends \Shipard\Application
 
 		if (is_readable($fullFileName))
 		{
-			header('X-Frame-Options: SAMEORIGIN');
+			//header('X-Frame-Options: SAMEORIGIN');
 			header('Content-type: image/jpeg');
 			header('X-Accel-Redirect: ' . $imgPath);
 			return '';
