@@ -313,7 +313,7 @@ class Manager extends \Shipard\host\Core
 
 	public function upgrade ()
 	{
-		$channel = 'stable';
+		$channel = 'devel';
 		if (isset($this->app->serverCfg['channel']))
 			$channel = $this->app->serverCfg['channel'];
 
