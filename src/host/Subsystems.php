@@ -18,7 +18,6 @@ class Subsystems extends \Shipard\host\Core
 		$this->checkFfmpeg();
 		$this->checkImageMagick();
 		$this->checkNginx();
-		$this->checkPhpInotify();
 		$this->checkNodeJS();
 		$this->checkMqttServer();
 		$this->checkMqttEngine();
@@ -174,6 +173,14 @@ class Subsystems extends \Shipard\host\Core
 			$needRestart = TRUE;
 		}
 
+		// -- nginx cfg
+		$fn = '/etc/nginx/conf.d/shpd-server.conf';
+		if (!is_file($fn)) 
+		{
+			symlink('/usr/lib/shipard-node/etc/nginx/shpd-server.conf', $fn);
+			$needRestart = TRUE;
+		}
+
 		// -- host cfgFile
 		$hostConfigFileName = '/etc/nginx/sites-available/'.'shipard-node.conf';
 		$hostConfigEnableFileName = '/etc/nginx/sites-enabled/'.'shipard-node.conf';
@@ -198,9 +205,7 @@ class Subsystems extends \Shipard\host\Core
 
 		// -- restart service
 		if ($needRestart)
-		{
 			$this->restartHostService('nginx', 'reload');
-		}
 
 		if ($this->needCamerasSupport())
 		{
@@ -390,39 +395,37 @@ class Subsystems extends \Shipard\host\Core
 
 	function checkPhpFpm ()
 	{
-		if (!is_dir('/var/run/php/'))
+		if (!is_dir('/var/run/php/') && !is_dir('/run/php/'))
 		{
 			$installCmd = "apt-get --assume-yes --quiet install php8.1-fpm";
 			passthru($installCmd);
 		}
-	}
 
-	function checkPhpInotify ()
-	{
-		if (!$this->needCamerasSupport())
-			return;
-		/*
-		$phpVer = '';
-		if (is_dir('/etc/php/8.0'))
-			$phpVer = '8.0';
+		$needRestart = FALSE;
+		// -- php-fpm
+		if (is_dir ('/etc/php/8.1'))
+		{
+			$fn = '/etc/php/8.1/fpm/pool.d/zz-shpd-php-fpm.conf';
+			if (!is_file($fn)) 
+			{
+				symlink('/usr/lib/shipard-node/etc/php/zz-shpd-php-fpm.conf', $fn);
+				$needRestart = TRUE;
+			}
+			$fn = '/etc/php/8.1/fpm/conf.d/95-shpd-php.ini';
+			if (!is_file($fn)) 
+			{
+				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
+				$needRestart = TRUE;
+			}
+			$fn = '/etc/php/8.1/cli/conf.d/95-shpd-php.ini';
+			if (!is_file($fn)) 
+			{
+				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
+			}
+		}
 
-		$inotifyCfgFileName = '/etc/php/'.$phpVer.'/cli/conf.d/40-shn-inotify.ini';
-		if (is_readable($inotifyCfgFileName))
-			return;
-
-		$installCmd = "apt-get --assume-yes --quiet install php-dev php-pear";
-		passthru($installCmd);
-
-		$installCmd = "pecl install inotify";
-		passthru($installCmd);
-
-		$inotifyCfg = '';
-		$inotifyCfg .= "; shipard-node inotify 0.1\n";
-		$inotifyCfg .= "; priority=50\n";
-		$inotifyCfg .= "extension=inotify.so\n";
-
-		file_put_contents($inotifyCfgFileName, $inotifyCfg);
-		*/
+		if ($needRestart)
+			$this->restartHostService('php8.1-fpm', 'reload');
 	}
 
 	function needLanControl()
