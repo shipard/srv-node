@@ -153,10 +153,15 @@ class Archive
 		$this->scanVideo();
 		$this->log ("   removeFirstHourVideo - firstHour=".json_encode($this->content['video']['firstHour']));
 		if (!isset ($this->content['video']['firstHour']))
+		{
+			$this->log ("   removeFirstHourVideo END [#1 - no firstHour date]");
 			return;
+		}	
 		if (!isset ($this->content['video']['firstHour']['date']) || $this->content['video']['firstHour']['date'] === '9999-99-99')
+		{
+			$this->log ("   removeFirstHourVideo END [#2 - invalid firstHour date]");
 			return;
-
+		}	
 		$firstHourDate = $this->content['video']['firstHour']['date'];
 		$firstHourDir = $this->app->camsDir.'/archive/video/'.$firstHourDate.'/'.sprintf('%02d', $this->content['video']['firstHour']['hour']);
 

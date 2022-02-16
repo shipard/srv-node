@@ -292,7 +292,7 @@ class Manager extends \Shipard\host\Core
 
 		$df = disk_free_space($videoDrivePath);
 		$sizeToFree = $minFreeSpaceVideos - $df;
-		$this->log ("   df #0 `$df`; sizeToFree `$sizeToFree`");
+		$this->log ("   diskFreeSpace for `$videoDrivePath` #0 `$df`; sizeToFree `$sizeToFree`");
 
 		$cnt = 0;
 		$ca = new \Shipard\cameras\Archive ($this->app);
@@ -302,7 +302,7 @@ class Manager extends \Shipard\host\Core
 			$df = disk_free_space($videoDrivePath);
 			$sizeToFree = $minFreeSpaceVideos - $df;
 			$cnt++;
-			$this->log ("   df #{$cnt} `$df`; sizeToFree `$sizeToFree`");
+			$this->log ("   diskFreeSpace for `$videoDrivePath` #{$cnt} `$df`; sizeToFree `$sizeToFree`");
 
 			if ($cnt > 12)
 				break;
