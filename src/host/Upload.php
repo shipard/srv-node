@@ -33,6 +33,7 @@ class Upload extends \Shipard\host\Core
 			'sensorsData' => [],
 		];
 
+		$cnt = 0;
 		foreach ($files as $fileName)
 		{
 			$bn = basename($fileName);
@@ -64,12 +65,16 @@ class Upload extends \Shipard\host\Core
 				}
 			}
 
-			if ($sensorData['value'] === '' || $sensorData['value'] === false)
+			if ($sensorData['value'] === '' || $sensorData['value'] === 'nan' || $sensorData['value'] === false)
 				$sensorData['value'] = 0;
 
 			$tsdbData .= ' value='.$sensorData['value'];
 			$tsdbData .= ' '.$sensorData['time'];
 			$tsdbData .= "\n";
+
+			$cnt++;
+			if ($cnt > 1000)
+				break;
 		}
 
 		// -- shipard
