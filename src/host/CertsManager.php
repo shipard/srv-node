@@ -19,8 +19,6 @@ class CertsManager extends \Shipard\host\Core
 		$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-node-server-certs/'.$this->app->serverCfg['serverId'];
 		$cfg = $this->app->apiCall($url);
 
-		print_r($cfg);
-
 		$this->installCertificates($cfg['certificates']);
 
 		return TRUE;
@@ -62,14 +60,11 @@ class CertsManager extends \Shipard\host\Core
 
 		if ($needRestart)
 		{
-			$restartServices = [];
 			if (is_dir('/etc/nginx'))	
-				$restartServices[] = 'nginx';
+				$this->restartHostService('nginx', 'reload');
 
 			if (is_dir('/etc/mosquitto'))
-				$restartServices[] = 'mosquitto';
-
-			$this->restartHostServices($restartServices, 'reload');
+				$this->restartHostService('mosquitto', 'restart');
 		}
 	}
 
