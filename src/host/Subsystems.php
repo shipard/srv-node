@@ -332,6 +332,7 @@ class Subsystems extends \Shipard\host\Core
 
 	function nginxHostConfig()
 	{
+		$cntNetdataProxies = 0;
 		$c = '';
 		$c .= "# primary shipard-node server; config; ver 0.5\n";
 
@@ -339,10 +340,15 @@ class Subsystems extends \Shipard\host\Core
 		{
 			foreach ($this->app->nodeCfg['cfg']['httpProxies'] as $hp)
 			{
-				$c .= "upstream backend-{$hp['id']} {\n";
-				$c .= "\tserver {$hp['destIP']}:{$hp['destPort']};\n";
-				$c .= "\tkeepalive 64;\n";
-				$c .= "}\n\n";
+				if ($hp['type'] === 'netdata')
+				{
+					$c .= "upstream backend-{$hp['id']} {\n";
+					$c .= "\tserver {$hp['destIP']}:{$hp['destPort']};\n";
+					$c .= "\tkeepalive 64;\n";
+					$c .= "}\n\n";
+
+					$cntNetdataProxies++;
+				}
 			}
 		}
 
@@ -366,7 +372,7 @@ class Subsystems extends \Shipard\host\Core
 		$c .= "\tinclude /usr/lib/shipard-node/etc/nginx/shn-host.conf;\n";
 		$c .= "\tinclude /usr/lib/shipard-node/etc/nginx/shn-https.conf;\n";
 
-		if (isset($this->app->nodeCfg['cfg']['httpProxies']))
+		if ($cntNetdataProxies)
 		{
 			$c .= "\n";
 			$c .= "\t".'location ~ /netdata/(?<behost>.*)/(?<ndpath>.*) {'."\n";
@@ -385,7 +391,18 @@ class Subsystems extends \Shipard\host\Core
 
 			$c .= "\t".'location ~ /netdata/(?<behost>.*) {'."\n";
 			$c .= "\t\t".'return 301 /netdata/$behost/;'."\n";
-	    $c .= "\t".'}'."\n";
+	    $c .= "\t".'}'."\n\n";
+		}
+
+		if (isset($this->app->nodeCfg['cfg']['httpProxies']))
+		{
+			foreach ($this->app->nodeCfg['cfg']['httpProxies'] as $hp)
+			{
+				if ($hp['type'] === 'inside')
+				{
+					$c .= $hp['insideDef'];
+				}
+			}
 		}
 
 		$c .= "}\n\n";
