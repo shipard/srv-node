@@ -1,0 +1,6 @@
+{
+  "serialPort": "/dev/serial/by-id/usb-Olimex_Ltd_MOD-RFID1356MIFARE_1234567890ABCDE-if00",
+  "mqttHost": "mqtt.host.name",
+  "mqttPort": 8883,
+  "mqttTopic": "shp/readers/rfi-123-abc"
+}
