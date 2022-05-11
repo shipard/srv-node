@@ -4,7 +4,6 @@ var mqtt = require('mqtt')
 		, exec = require('child_process').exec
 		, fs = require('fs')
 		, https = require('https')
-		, redis = require("redis")
 		, crypto = require('crypto')
 		, log4js = require('log4js')
 		, logger = log4js.getLogger()
