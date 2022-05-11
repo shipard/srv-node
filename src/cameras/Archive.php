@@ -225,16 +225,20 @@ class Archive
 				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams'][$camNdx]['filesSize']));
 
 				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/hourly-files-size';
-				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams-hour'][$camNdx]['filesSize']));
 
-				if (!$this->content['video']['stats']['cams-hour'][$camNdx]['filesSize'] || !$this->content['video']['stats']['cams-hour'][$camNdx]['filesCnt'])
+				$camHourFilesSize = $this->content['video']['stats']['cams-hour'][$camNdx]['filesSize'] ?? 0;
+				$camHourFilesCnt = $this->content['video']['stats']['cams-hour'][$camNdx]['filesCnt'] ?? 0;
+
+				$this->app->sendMqttMessage($topic, strval($camHourFilesSize));
+
+				if (!$camHourFilesSize || !$camHourFilesCnt)
 				{
 					$alert = [
 						'alertType' => 'mac-lan',
 						'alertKind' => 'mac-lan-cam-video-error',
 						'alertSubject' => 'Camera #'.$camNdx.' / '.$cam['camId'].' video has errors',
 						'alertId' => 'mac-lan-cam-video-' . $camNdx,
-						'payload' => $this->content['video']['stats']['cams-hour'][$camNdx],
+						'payload' => $this->content['video']['stats']['cams-hour'][$camNdx] ?? ['error' => 'stats for camera #'.$camNdx.' not found'],
 					];
 					$this->app->sendAlert($alert);
 				}	
