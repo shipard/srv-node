@@ -163,6 +163,8 @@ class Application
 	function sendMqttMessage($topic, $payload)
 	{
 		$mqttHost = isset($this->nodeCfg['cfg']['mqttServerHost']) ? $this->nodeCfg['cfg']['mqttServerHost'] : '';
+		if ($mqttHost === '')
+			return;
 
 		$cmd = 'mosquitto_pub -h '.$mqttHost.' --capath /etc/ssl/certs/ -t "'.$topic.'" -m \''.$payload.'\'';
 		//echo $cmd."\n";
