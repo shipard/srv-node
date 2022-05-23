@@ -381,6 +381,7 @@ async function doEventOn(topic, payload)
 {
 	let event = configuration['eventsOn'][topic];
 	
+	/*
 	if (event['scene'] !== undefined)
 	{
 		//console.log ("!!! SCENE !!!");
@@ -399,6 +400,7 @@ async function doEventOn(topic, payload)
 			return;
 		}
 	}
+	*/
 	
 	let payloadData = {};
 	try {
@@ -415,6 +417,26 @@ async function doEventOn(topic, payload)
 	for(let onItemId in event['on'])
 	{
 		let onItem = event['on'][onItemId];
+
+		if (onItem['scene'] !== undefined)
+		{
+			//console.log ("!!! SCENE !!!");
+			const setupInfo = getInfo(onItem['setup']);
+			//console.log("setupInfo: ", setupInfo);
+	
+			if (setupInfo['scene'] === undefined)
+			{
+				//console.log("Unknown scebe on setup "+onItem['setup']);
+				continue;
+			}
+		
+			if (setupInfo['scene'] !== onItem['scene'])
+			{
+				//console.log("not valid on this scene");
+				continue;
+			}
+		}
+	
 
 		if (onItem['type'] === 0 || onItem['type'] === 4)
 		{
@@ -523,7 +545,8 @@ function doSetupActions(setupId, actions, srcTopic, srcPayload)
 
 function doSetupRequest(setupId, setupCfg, requestData)
 {
-	//console.log(requestData);
+	console.log('doSetupRequest');
+	console.log(requestData);
 	const data = JSON.stringify(requestData);
 	const apiUrl = serverConfiguration.dsUrl + 'api/objects/call/iot-mac-setup-request';
 
@@ -548,8 +571,8 @@ function doSetupRequest(setupId, setupCfg, requestData)
 		});
 
 		res.on('end', () => {
-			//console.log('Response from ', setupId);
-			//console.log(data);
+			console.log('Response from ', setupId);
+			console.log(data);
 			const parsedData = JSON.parse(data);
 			if (parsedData['callActions'] !== undefined)
 			{

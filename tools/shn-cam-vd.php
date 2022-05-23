@@ -25,10 +25,10 @@ class WatchVDApp extends \Shipard\Application
 
 			foreach ($events as $event)
 			{
-				$imgFileName = $event['name']; // 34_20190808095532670_4Z52506_VEHICLE_DETECTION.jpg
+				$imgFileName = $event['name']; // 34_1Z51234_20220520144533290.jpg --> CAM-NDX_LP_DATETIME.jpg
 
 				$parts = explode('_', $imgFileName);
-				if (count($parts)  !== 5)
+				if (count($parts) !== 3)
 					continue;
 
 				$cameraCfg = (isset($this->nodeCfg['cfg']['cameras'][$parts[0]])) ? $this->nodeCfg['cfg']['cameras'][$parts[0]] : NULL;
@@ -48,12 +48,12 @@ class WatchVDApp extends \Shipard\Application
 
 				$eventData = [
 					'action' => 'vd',
-					'lp' => $parts[2],
+					'lp' => $parts[1],
 					'cam' => intval($parts[0]),
 					'img' => $imgFileName,
 				];
 
-				$cmd = 'mosquitto_pub -h '.$mqttHost.' -t "'.$topic.'" -m "'.str_replace("\"", "\\\"", json_encode($eventData)).'"';
+				$cmd = 'mosquitto_pub -h '.$mqttHost.' --capath /etc/ssl/certs/'.' -t "'.$topic.'" -m "'.str_replace("\"", "\\\"", json_encode($eventData)).'"';
 
 				if ($mqttHost !== '')
 				{
