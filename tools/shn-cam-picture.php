@@ -37,13 +37,16 @@ class WatchApp extends \Shipard\Application
 				if ($this->evd)
 				{
 					$isVD = 0;
-					if (substr($imgFileName, -21) === 'VEHICLE_DETECTION.jpg')
+					//if (substr($imgFileName, -21) === 'VEHICLE_DETECTION.jpg')
+					//	$isVD = 1;
+					$vdid = $this->cameraId.'_';
+					if (str_starts_with($imgFileName, $vdid))
 						$isVD = 1;
 
 					if ($isVD)
 					{
 						$srcFileName = $this->cameraDir . '/' . $imgFileName;
-						$dstFileName = $this->vehicleDetectDir . $this->cameraId . '_' . $imgFileName;
+						$dstFileName = $this->vehicleDetectDir . $imgFileName;
 						rename($srcFileName, $dstFileName);
 
 						continue;
