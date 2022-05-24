@@ -270,7 +270,7 @@ function setScene(setupId, sceneId)
 function doSetupGet(setupId)
 {
 	const setupInfo = getInfo(setupId);
-	mqttClient.publish (setupId, JSON.stringify(setupInfo), { /*qos: 0, retain: false*/ }, (error) => {
+	mqttClient.publish (setupId, JSON.stringify(setupInfo), {qos: 0, retain: false}, (error) => {
 		if (error) {
 			console.error(error)
 		}
@@ -291,7 +291,7 @@ function onSensors(topic, payload)
 		const sendTopic = 'shp/sensors/' + topic + '/' + key;
 		const value = payloadData[key].toString();
 
-		mqttClient.publish (sendTopic, value, { /*qos: 0, retain: false*/ }, (error) => {
+		mqttClient.publish (sendTopic, value, {qos: 0, retain: false}, (error) => {
 			if (error) {
 				console.error(error)
 			}
@@ -438,7 +438,7 @@ async function doEventOn(topic, payload)
 		}
 	
 
-		if (onItem['type'] === 0 || onItem['type'] === 4)
+		if (onItem['type'] === 0 || onItem['type'] === 3 || onItem['type'] === 4)
 		{
 			if (onItem['dataItem'] !== undefined && onItem['dataItem'] in payloadData)
 			{
@@ -494,7 +494,7 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 
 				//console.log (" --> "+doPropertyItemId+" --> " + payload);
 				//console.log(doPropertiesItem);
-				mqttClient.publish (doPropertyItemId, payload, { /*qos: 0, retain: false*/ }, (error) => {
+				mqttClient.publish (doPropertyItemId, payload, {qos: 0, retain: false}, (error) => {
 					if (error) {
 						console.error(error)
 					}
@@ -580,7 +580,7 @@ function doSetupRequest(setupId, setupCfg, requestData)
 				{
 					const actionItem = parsedData['callActions'][actionId];
 					//console.log ("   -> PUBLISH: ", actionItem['topic'], JSON.stringify(actionItem['payload']));
-					mqttClient.publish (actionItem['topic'], JSON.stringify(actionItem['payload']), { qos: 0, retain: false }, (error) => {
+					mqttClient.publish (actionItem['topic'], JSON.stringify(actionItem['payload']), {qos: 0, retain: false}, (error) => {
 						if (error) {
 							console.error(error)
 						}
@@ -651,7 +651,7 @@ function runEventLoopItem(loop)
 			//console.log("SET NEW VALUE ON "+prop['setTopic']+" --> "+prop['property']+" --> FROM: "+currentValue+" TO: "+newValue);
 			//console.log(JSON.stringify(sendData));
 
-			mqttClient.publish (prop['setTopic'], JSON.stringify(sendData), { qos: 0, retain: false }, (error) => {
+			mqttClient.publish (prop['setTopic'], JSON.stringify(sendData), {qos: 0, retain: false}, (error) => {
 				if (error) {
 					console.error(error)
 				}
