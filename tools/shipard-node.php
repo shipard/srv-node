@@ -82,6 +82,13 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	public function fwUpgradeIotBoxes ()
+	{
+		$fwd = new \Shipard\host\FWDownload($this);
+		$fwd->fwUpgradeIotBoxes();
+		return TRUE;
+	}
+	
 	public function hostCheck ()
 	{
 		$hm = new \Shipard\host\Manager($this);
@@ -382,6 +389,7 @@ class NodeApp extends \Shipard\Application
 
 			case	'fw-download':  				return $this->fwDownload();
 			case	'fw-list':  						return $this->fwList();
+			case	'fw-upgrade-iot-boxes': return $this->fwUpgradeIotBoxes();
 
 
 			case	'cameras-scan-archive': return $this->scanArchive();

@@ -179,6 +179,42 @@ class FWDownload extends \Shipard\host\Core
 		$this->download('nextion');
 	}
 
+	function fwListPartLoad ($partId)
+	{
+		$list = [];
+
+		$partDir = $this->localDir.'/'.$partId;
+		$channels = $this->app->loadCfgFile($partDir.'/'.'channels.json');
+		if (!$channels)
+			return NULL;
+
+		foreach ($channels as $channelId)
+		{
+			$projects = $this->app->loadCfgFile($partDir.'/'.$channelId.'/projects.json');
+			foreach ($projects as $projectId => $projectCfg)
+			{
+				$filesDir = $partDir.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/';
+				$filesCfg = $this->app->loadCfgFile($filesDir.'files.json');
+				foreach ($filesCfg['files'] as $f)
+				{
+					$fileName = $filesDir.$f['fileName'];
+					$baseName = $f['fileName'];
+					$fileSize = filesize($fileName);
+					$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/'.$baseName;
+					if ($partId === 'ib')
+					{
+						$list[$channelId][$f['fwId']] = [
+							'fileSize' => $fileSize,
+							'fileUrl' => 'http://'.$this->app->nodeCfg['cfg']['mqttServerIPV4'].'/'.$urlFileName,
+						];
+					}
+				}
+			}
+		}
+		return $list;
+	}
+
+
 	function fwListPart ($partId)
 	{
 		$partDir = $this->localDir.'/'.$partId;
@@ -205,11 +241,6 @@ class FWDownload extends \Shipard\host\Core
 					$fileSize = filesize($fileName);
 					$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/'.$baseName;
 					echo '       '.sprintf('% 8d', $fileSize).' '.$urlFileName."\n";
-					if ($partId === 'ib')
-						echo '         -> mosquitto_pub -t shp/iot-boxes/IOT-BOX-ID/cmd:fwUpgrade -m "'.$fileSize.' http://'.$this->app->nodeCfg['cfg']['mqttServerHost'].'/'.$urlFileName."\"\n";
-					//mosquitto_pub -t shp/iot-boxes/IOT-BOX-ID/cmd:fwUpgrade -m "826384 http://10.11.9.2/fw/ib/stable/iot-box-lan-core/0.91.1-9302944/iot-box-lan-core-esp32-poe-0.91.1-9302944-fw.bin"
-
-
 				}
 			}
 		}
@@ -222,5 +253,43 @@ class FWDownload extends \Shipard\host\Core
 		{
 			$this->fwListPart($partId);
 		}
+	}
+
+	public function fwUpgradeIotBoxes()
+	{
+		if (!is_readable('/etc/shipard-node/iot-boxes.json'))
+		{
+			return;
+		}
+
+		$channelId = 'stable';
+
+		$fwList = $this->fwListPartLoad ('ib');
+
+		print_r($fwList);
+		$iotBoxes = $this->app->loadCfgFile('/etc/shipard-node/iot-boxes.json');
+		foreach ($iotBoxes as $iotBoxNdx => $iotBoxCfg)
+		{
+			$iotBoxId = $iotBoxCfg['cfg']['deviceId'];
+			$fwId = $iotBoxCfg['cfg']['fwId'] ?? NULL;
+
+			if (!$fwId)
+			{
+
+				continue;
+			}
+
+			if (!isset($fwList[$channelId][$fwId]))
+			{
+
+				continue;
+			}
+
+			$fwItem = $fwList[$channelId][$fwId];
+
+			$cmd = 'mosquitto_pub -t shp/iot-boxes/'.$iotBoxId.'/cmd:fwUpgrade -m "'.$fwItem['fileSize'].' '.$fwItem['fileUrl'].'"';
+			echo $cmd."\n";
+		}
+
 	}
 }
