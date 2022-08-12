@@ -4,6 +4,7 @@ from os import path, curdir, sep
 import serial
 import json
 import paho.mqtt.client as mqtt
+import keyboard
 
 config = None
 mqttClient = None
@@ -58,8 +59,10 @@ def readingLoop ():
 		rfidValue = read_chars[1:-2]
 		if (1):
 			rfidValue = "".join(reversed([rfidValue[i:i+2] for i in range(0, len(rfidValue), 2)]))
-		#print(rfidValue)
-		mqttClient.publish(config['mqttTopic'], rfidValue)
+		print(rfidValue)
+		#mqttClient.publish(config['mqttTopic'], rfidValue)
+		keyboard.write(rfidValue, exact = True)
+		keyboard.send("enter")
 
 
 def main():
