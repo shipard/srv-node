@@ -54,7 +54,7 @@ class BackupVMS extends \Shipard\host\Core
 
 		$dstFileName = $dstPath.'/'.$vm['id'].'-'.$this->dateStr.'.xz';
 
-		$cmd = 'lxc export '.$vm['id'].' '.$dstFileName.' -q';
+		$cmd = 'lxc export '.$vm['id'].' '.$dstFileName.' -q > /dev/null';
 
 		echo $cmd."\n";
 		passthru($cmd);
