@@ -266,6 +266,24 @@ class Manager extends \Shipard\host\Core
 			passthru ($cmdCleanOldFiles);
 		}
 
+		// -- shipard email delivery
+		$cmdCleanOldFiles = 'find . -mtime +180 -type f -delete';
+		if (is_dir('/var/lib/shipard-node/email/done'))
+		{
+			chdir ('/var/lib/shipard-node/email/done');
+			passthru ($cmdCleanOldFiles);
+		}
+		if (is_dir('/var/lib/shipard-node/email/queue'))
+		{
+			chdir ('/var/lib/shipard-node/email/queue');
+			passthru ($cmdCleanOldFiles);
+		}
+		if (is_dir('/var/lib/shipard-node/email/reports'))
+		{
+			chdir ('/var/lib/shipard-node/email/reports');
+			passthru ($cmdCleanOldFiles);
+		}
+
 		chdir ($oldDir);
 	}
 
