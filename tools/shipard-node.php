@@ -88,7 +88,7 @@ class NodeApp extends \Shipard\Application
 		$fwd->fwUpgradeIotBoxes();
 		return TRUE;
 	}
-	
+
 	public function hostCheck ()
 	{
 		$hm = new \Shipard\host\Manager($this);
@@ -328,7 +328,11 @@ class NodeApp extends \Shipard\Application
 
 	protected function bkpSrvDownload()
 	{
+		$server = $this->arg('server');
+
 		$eng = new \Shipard\backupServer\BackupServer($this);
+		if ($server)
+			$eng->server = $server;
 		$eng->init();
 		$eng->downloadAll();
 		return TRUE;
@@ -337,7 +341,7 @@ class NodeApp extends \Shipard\Application
 	protected function bkpVMSBackup()
 	{
 		$eng = new \Shipard\backupVMS\BackupVMS($this);
-		
+
 		if (!$eng->init())
 			return FALSE;
 
@@ -409,7 +413,7 @@ class NodeApp extends \Shipard\Application
 			case	'iot-box-info':					return $this->iotBoxInfo();
 
 			case	'bkpsrv-download':			return $this->bkpSrvDownload();
-			
+
 			case	'bkpvms-backup':				return $this->bkpVMSBackup();
 
 			case	'netdata-alarm':				return $this->netDataAlarm();

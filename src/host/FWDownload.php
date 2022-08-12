@@ -101,7 +101,7 @@ class FWDownload extends \Shipard\host\Core
 				return TRUE;
 			}
 
-			echo "this is new version\n";
+			//echo "this is new version\n";
 
 			$files = $this->downloadCfgFile($this->baseUrl . $partId . '/' . $channelId . '/' . $projectId.'/'.$remoteVersion['version'] . '/files.json');
 			if (!$files)

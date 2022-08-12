@@ -10,6 +10,7 @@ class BackupServer extends \Shipard\host\Core
 	var $backupCfg = NULL;
 	var $dateStr = '';
 	var $dateStrDir = '';
+	var $server = '';
 
 	public function init()
 	{
@@ -24,6 +25,9 @@ class BackupServer extends \Shipard\host\Core
 	{
 		foreach ($this->backupCfg['dsServers'] as $srv)
 		{
+			if ($this->server && $this->server !== $srv['hostName'])
+				continue;
+
 			$this->downloadDataSourcesServer($srv);
 		}
 	}
@@ -57,7 +61,7 @@ class BackupServer extends \Shipard\host\Core
 				passthru($cmd);
 			}
 		}
-		
+
 		// -- databases
 		foreach ($backupInfo['dataSources'] as $backup)
 		{
@@ -79,7 +83,7 @@ class BackupServer extends \Shipard\host\Core
 			$syncDestDir = $this->backupCfg['destFolder'].'dataSources/'.$backup['dsid'].'/sync';
 			if (!is_dir($syncDestDir))
 				mkdir ($syncDestDir, 0750, TRUE);
-	
+
 			$cmd = "rsync -azk -e \"ssh -p $port\" {$remoteUser}@$hostName:{$backup['serverPath']}/att $syncDestDir";
 			echo $cmd . "\n";
 			passthru($cmd);
@@ -93,6 +97,9 @@ class BackupServer extends \Shipard\host\Core
 
 		foreach ($this->backupCfg['nodeServers'] as $srv)
 		{
+			if ($this->server && $this->server !== $srv['hostName'])
+				continue;
+
 			echo $srv['hostName']."\n";
 			$this->downloadNodeServer($srv);
 		}
@@ -108,7 +115,7 @@ class BackupServer extends \Shipard\host\Core
 
 		if (!is_dir($localDestDir))
 			mkdir ($localDestDir, 0750, TRUE);
-		
+
 		$cmd = "scp -r -P $port {$remoteUser}@$hostName:$hostBackupDir/{$this->dateStr}/* $localDestDir";
 		echo $cmd . "\n";
 		passthru($cmd);
@@ -121,7 +128,7 @@ class BackupServer extends \Shipard\host\Core
 		if (isset($this->backupCfg['defaults']['remoteUser']))
 			return $this->backupCfg['defaults']['remoteUser'];
 
-		return '';	
+		return '';
 	}
 
 	protected function hostName($h)
@@ -129,7 +136,7 @@ class BackupServer extends \Shipard\host\Core
 		if (isset($h['hostName']))
 			return $h['hostName'];
 
-		return '';	
+		return '';
 	}
 
 	protected function hostBackupDir($h)
@@ -137,7 +144,7 @@ class BackupServer extends \Shipard\host\Core
 		if (isset($h['backupDir']))
 			return $h['backupDir'];
 
-		return '/var/lib/shipard/backups';	
+		return '/var/lib/shipard/backups';
 	}
 
 	protected function hostPort($h)

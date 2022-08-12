@@ -48,7 +48,10 @@ class CertsManager extends \Shipard\host\Core
 
 			foreach ($cert['files'] as $fileName => $fileContent)
 			{
-				$oldFileCheckSum = sha1_file($certPath.$fileName);
+				if (is_readable($certPath.$fileName))
+					$oldFileCheckSum = sha1_file($certPath.$fileName);
+				else
+					$oldFileCheckSum = '';
 				$newFileCheckSum = sha1($fileContent);
 
 				if ($oldFileCheckSum !== $newFileCheckSum)

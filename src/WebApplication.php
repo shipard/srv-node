@@ -72,7 +72,7 @@ class WebApplication extends \Shipard\Application
 		header ("HTTP/1.1 200 OK");
 
 		$callback = '';
-		if ($_GET['callback'])
+		if (isset($_GET['callback']))
 			$callback = htmlspecialchars ($_GET['callback']);
 
 		if ($callback !== '')
