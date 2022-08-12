@@ -107,7 +107,7 @@ class Upload extends \Shipard\host\Core
 			$resultCode = curl_exec($curl);
 			if ($resultCode !== '')
 			{
-				echo "ERROR: " . json_encode($resultCode) . "\n";
+				echo "ERROR-INFLUX-DB: " . json_encode($resultCode) . "\n";
 				return;
 			}
 		}
