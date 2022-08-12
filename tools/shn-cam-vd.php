@@ -28,7 +28,7 @@ class WatchVDApp extends \Shipard\Application
 				$imgFileName = $event['name']; // 34_1Z51234_20220520144533290.jpg --> CAM-NDX_LP_DATETIME.jpg
 
 				$parts = explode('_', $imgFileName);
-				if (count($parts) !== 3)
+				if (count($parts) < 3)
 					continue;
 
 				$cameraCfg = (isset($this->nodeCfg['cfg']['cameras'][$parts[0]])) ? $this->nodeCfg['cfg']['cameras'][$parts[0]] : NULL;
