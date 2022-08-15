@@ -181,10 +181,21 @@ class ImageResizer
 				" \"{$this->cacheFullFileName}.jpg\"" .
 				' '. $outputFileParam . "\"" . $this->cacheFullFileName . "\"";
 		else
-			$cmd = $fileType['util'] . " " . $extraParam . implode (" ", $this->convertParams) .
-				" \"" . $srcFileName . $extraSourceNameParam . "\"" .
-				' '. $outputFileParam . "\"" . $this->cacheFullFileName . "\"";
-
+		{
+			$resizeViaPIL = intval($this->app->serverCfg['resizeViaPIL'] ?? 0);
+			if ($resizeViaPIL && $srcType === '.jpg')
+			{
+				$cmd = '/usr/lib/shipard-node/tools/shn-resize-image.py' .
+					" \"" . $srcFileName . "\"" .
+					" \"" . $this->cacheFullFileName . "\"";
+			}
+			else
+			{
+				$cmd = $fileType['util'] . " " . $extraParam . implode (" ", $this->convertParams) .
+					" \"" . $srcFileName . $extraSourceNameParam . "\"" .
+					' '. $outputFileParam . "\"" . $this->cacheFullFileName . "\"";
+			}
+		}
 		exec ($cmd);
 	}
 
