@@ -145,22 +145,17 @@ class Manager extends \Shipard\host\Core
 		$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-lan-monitoring-snmp/'.$this->app->serverCfg['serverId'];
 		$cfg = $this->app->apiCall($url);
 
-		print_r($cfg);
+		//print_r($cfg);
 
-		if (!$cfg || !$cfg['success'] || !isset($cfg['cfg']['realtime']) || !count($cfg['cfg']['realtime']))
+		if (!$cfg || !$cfg['success'] || !isset($cfg['netdataCfgFile']))
 		{
 			return FALSE;
-		}	
+		}
 
-		$snmpConf = [
-			'enable_autodetect' => FALSE,
-			'update_every' => 10,
-			'servers' => $cfg['cfg']['realtime'],
-		];
-		$snmpConfTxt = json_encode($snmpConf,JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		$snmpConfTxt = $cfg['netdataCfgFile'];
 		$newCheckSum = sha1($snmpConfTxt);
 
-		$fn = $netdataEtcDir.'node.d/snmp.conf';
+		$fn = $netdataEtcDir.'go.d/snmp.conf';
 
 		$currentCheckSum = '';
 		if (is_readable($fn))
