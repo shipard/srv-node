@@ -156,12 +156,12 @@ class Archive
 		{
 			$this->log ("   removeFirstHourVideo END [#1 - no firstHour date]");
 			return;
-		}	
+		}
 		if (!isset ($this->content['video']['firstHour']['date']) || $this->content['video']['firstHour']['date'] === '9999-99-99')
 		{
 			$this->log ("   removeFirstHourVideo END [#2 - invalid firstHour date]");
 			return;
-		}	
+		}
 		$firstHourDate = $this->content['video']['firstHour']['date'];
 		$firstHourDir = $this->app->camsDir.'/archive/video/'.$firstHourDate.'/'.sprintf('%02d', $this->content['video']['firstHour']['hour']);
 
@@ -212,6 +212,17 @@ class Archive
 
 		//if (sha1($currentStatsString) !== sha1($statsString))
 		{
+			// -- send to netdata/statd
+			$netDataStrValue = '';
+			$fsgb = round($this->content['video']['stats']['filesSize'] / 1073741824, 3);
+			$netDataStrValue .= 'cameras.archive.diskUsage: '.$fsgb."|g|#units=GB,name=diskUsage\n";
+			$netDataStrValue .= 'cameras.archive.filesCount: '.$this->content['video']['stats']['filesCnt']."|g|#name=filesCount\n";
+			$netDataStrValue .= 'cameras.archive.len: '.$this->content['video']['stats']['hours']."|g|#units=h,name=archiveLen\n";
+			$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+			socket_sendto($sock, $netDataStrValue, strlen($netDataStrValue), 0, '127.0.0.1', 8125);
+			socket_close($sock);
+
+			// -- send to mqtt
 			$topic = 'shp/sensors/va/video-archive-files-size';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesSize']));
 			$topic = 'shp/sensors/va/video-archive-files-count';
@@ -241,7 +252,7 @@ class Archive
 						'payload' => $this->content['video']['stats']['cams-hour'][$camNdx] ?? ['error' => 'stats for camera #'.$camNdx.' not found'],
 					];
 					$this->app->sendAlert($alert);
-				}	
+				}
 			}
 		}
 	}
