@@ -191,11 +191,18 @@ class Archive
 		// last hour stats
 		$lastHourDateId = $this->content['video']['lastHour']['date'];
 		$lastHourHourId = $this->content['video']['lastHour']['hour'];
+
+		$this->content['video']['stats']['cams-hour'] = [];
+		$this->content['video']['stats']['cams-last-hour-total']['filesSize'] = 0;
+		$this->content['video']['stats']['cams-last-hour-total']['filesCnt'] = 0;
+
 		foreach ($this->content['video']['stats']['cams-all'] as $idCam => $camStats)
 		{
 			if (isset($camStats[$lastHourDateId][$lastHourHourId]))
 			{
 				$this->content['video']['stats']['cams-hour'][$idCam] = $camStats[$lastHourDateId][$lastHourHourId];
+				$this->content['video']['stats']['cams-last-hour-total']['filesSize'] += $camStats[$lastHourDateId][$lastHourHourId]['filesSize'];
+				$this->content['video']['stats']['cams-last-hour-total']['filesCnt'] += $camStats[$lastHourDateId][$lastHourHourId]['filesCnt'];
 			}
 		}
 
@@ -230,6 +237,7 @@ class Archive
 			$topic = 'shp/sensors/va/video-archive-len-hours';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['hours']));
 
+			$netDataStrValue = '';
 			foreach ($this->content['video']['stats']['cams'] as $camNdx => $cam)
 			{
 				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/files-size';
@@ -241,6 +249,9 @@ class Archive
 				$camHourFilesCnt = $this->content['video']['stats']['cams-hour'][$camNdx]['filesCnt'] ?? 0;
 
 				$this->app->sendMqttMessage($topic, strval($camHourFilesSize));
+
+				$fsgb = round($this->content['video']['stats']['cams'][$camNdx]['filesSize'] / 1073741824, 3);
+				$netDataStrValue .= 'cameras.diskUsage.'.$camNdx.': '.$fsgb.'|g|#units=GB,name='.$cam['camId'].",family=cameras.diskUsage\n";
 
 				if (!$camHourFilesSize || !$camHourFilesCnt)
 				{
@@ -254,6 +265,11 @@ class Archive
 					$this->app->sendAlert($alert);
 				}
 			}
+
+			// -- send to netdata/statd
+			$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+			socket_sendto($sock, $netDataStrValue, strlen($netDataStrValue), 0, '127.0.0.1', 8125);
+			socket_close($sock);
 		}
 	}
 

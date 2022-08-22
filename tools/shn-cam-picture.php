@@ -14,6 +14,9 @@ class WatchApp extends \Shipard\Application
 	var $cameraCfg = NULL;
 	var $evd = 0;
 
+	var $sizeFilesCounter = 0;
+	var $sizeFilesLen = 0;
+
 	public function watch()
 	{
 		$fd = inotify_init();
@@ -55,6 +58,24 @@ class WatchApp extends \Shipard\Application
 
 				$redis->set($keyImage, $imgFileName);
 				$redis->set($keyTime, time());
+
+				$srcFileName = $this->cameraDir . '/' . $imgFileName;
+				$this->sizeFilesLen += filesize($srcFileName);
+				$this->sizeFilesCounter++;
+
+				if ($this->sizeFilesCounter > 1800)
+				{
+					$avgFileSize = intval($this->sizeFilesLen / $this->sizeFilesCounter);
+					file_put_contents('/var/lib/shipard-node/tmp/cam_pict_avg_size_'.$this->cameraId, strval($avgFileSize));
+
+					$netDataStrValue = 'cameras.avgImgSize.'.$this->cameraId.': '.$avgFileSize."|g|#units=bytes,family=cameras.avgImgSizes\n";
+					$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+					socket_sendto($sock, $netDataStrValue, strlen($netDataStrValue), 0, '127.0.0.1', 8125);
+					socket_close($sock);
+
+					$this->sizeFilesLen = 0;
+					$this->sizeFilesCounter = 0;
+				}
 			}
 		}
 
