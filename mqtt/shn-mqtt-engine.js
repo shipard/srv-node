@@ -68,13 +68,13 @@ mqttClient.on('connect', function() {
 		{
 			doZigbee(topic, message.toString());
 			return;
-		}	
+		}
 
 		if (topic.startsWith(sensorsTopic))
 		{
 			doSensor(topic, payload);
-			return;
-		}	
+			//return;
+		}
 
 		if (configuration['eventsOn'] !== undefined && topic in configuration['eventsOn'])
 			doEventOn(topic, message.toString());
@@ -83,7 +83,7 @@ mqttClient.on('connect', function() {
 		{
 			doSetup(topic, message.toString());
 			return;
-		}	
+		}
 
 		const topicCfg = configuration['topics'][topic];
 		if (topicCfg !== undefined)
@@ -95,8 +95,8 @@ mqttClient.on('connect', function() {
 				onSensors(topic, message.toString());
 		}
 		else{
-			if (configuration['eventsOn'] !== undefined && !(topic in configuration['eventsOn']))
-				console.log ("UNREGISTERED TOPIC `"+topic+"`: "+message.toString());
+			//if (configuration['eventsOn'] !== undefined && !(topic in configuration['eventsOn']))
+			//	console.log ("UNREGISTERED TOPIC `"+topic+"`: "+message.toString());
 		}
 	});
 
@@ -115,15 +115,15 @@ let stopTopics = {};
 function eventLoop()
 {
 	//console.log("loop");
-	
+
 	for(let loopId in loops)
 	{
 		let loop = loops[loopId];
 	//	console.log("LOOP: "+loopId);
 		runEventLoopItem(loop);
 	}
-	
-	setTimeout (function () {eventLoop()}, 250);	
+
+	setTimeout (function () {eventLoop()}, 250);
 }
 
 function setInfo (topic, data)
@@ -135,7 +135,7 @@ function getInfo (topic)
 {
 	if (iotEngineInfo[topic] === undefined)
 		iotEngineInfo[topic] = {};
-	
+
 	return iotEngineInfo[topic];
 }
 
@@ -212,14 +212,14 @@ function doSetup(topic, payload)
 	{
 		return;
 	}
-	
+
 	//console.log ("SETUP: "+setupId+", operation: `"+operation+"`");
 
 	let payloadData = JSON.parse(payload);
 	if (operation === 'set')
 	{
 		doSetupSet(setupId, payloadData);
-		
+
 		return;
 	}
 	else if (operation === 'get')
@@ -255,9 +255,9 @@ function setScene(setupId, sceneId)
 	let setupInfo = getInfo(setupId);
 	setupInfo['scene'] = sceneId;
 	setInfo(setupId, setupInfo);
-	
+
 	doSetupGet(setupId);
-	
+
 	//console.log("SET SCENE "+sceneId);
 	const sceneCfg = configuration['topics'][sceneId];
 	runDoEvents(sceneCfg['do']);
@@ -354,7 +354,7 @@ function doZigbee (topic, payload)
 			console.log("ZIGBEE-LOG parse data ERROR!");
 			return;
 		}
-	
+
 		let data = {
 			'type': 'zigbee-devices-list',
 			'topic': topic,
@@ -380,7 +380,7 @@ function doZigbee (topic, payload)
 async function doEventOn(topic, payload)
 {
 	let event = configuration['eventsOn'][topic];
-	
+
 	/*
 	if (event['scene'] !== undefined)
 	{
@@ -393,7 +393,7 @@ async function doEventOn(topic, payload)
 			//console.log("Unknown place on setup "+event['setup']);
 			return;
 		}
-	
+
 		if (setupInfo['scene'] !== event['scene'])
 		{
 			//console.log("not valid on this scene");
@@ -401,13 +401,13 @@ async function doEventOn(topic, payload)
 		}
 	}
 	*/
-	
+
 	let payloadData = {};
 	try {
 		payloadData = JSON.parse(payload);
-	}	catch (e) {  
+	}	catch (e) {
 		payloadData = {'_payload': payload};
-		console.log('invalid json');  
+		console.log('invalid json');
 	}
 	if (payloadData['action_group'] !== undefined)
 		return;
@@ -423,20 +423,20 @@ async function doEventOn(topic, payload)
 			//console.log ("!!! SCENE !!!");
 			const setupInfo = getInfo(onItem['setup']);
 			//console.log("setupInfo: ", setupInfo);
-	
+
 			if (setupInfo['scene'] === undefined)
 			{
-				//console.log("Unknown scebe on setup "+onItem['setup']);
+				//console.log("Unknown scene on setup "+onItem['setup']);
 				continue;
 			}
-		
+
 			if (setupInfo['scene'] !== onItem['scene'])
 			{
 				//console.log("not valid on this scene");
 				continue;
 			}
 		}
-	
+
 
 		if (onItem['type'] === 0 || onItem['type'] === 3 || onItem['type'] === 4)
 		{
@@ -446,6 +446,15 @@ async function doEventOn(topic, payload)
 				{
 					runDoEvents(onItem['do'], topic, payloadData);
 				}
+			}
+		}
+		else
+		if (onItem['type'] === 9)
+		{ // sensor value
+			let sensorValue = parseInt(payloadData);
+			if (onItem['sensorValueFrom'] <= sensorValue && onItem['sensorValueTo'] >= sensorValue)
+			{
+				runDoEvents(onItem['do'], topic, payloadData);
 			}
 		}
 		else
@@ -481,12 +490,12 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				{
 					let pp = doPropertiesItem['data'];
 					payload = JSON.stringify(pp);
-				}	
+				}
 				else
 				if (doPropertiesItem['payload'] !== undefined)
 					payload = doPropertiesItem['payload'];
 
-				if (!payload)	
+				if (!payload)
 				{
 
 					continue;
@@ -510,7 +519,7 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				//console.log('sendSetupRequestAction: ', setupId, doActionItem);
 				doSetupActions(setupId, doActionItem['actions'], srcTopic, srcPayload);
 			}
-		}	
+		}
 		else if (doItemId === 'startLoop')
 		{
 			if (loops[doItem['id']] === undefined)
@@ -520,9 +529,9 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 					delete loopCounters[doItem['id']];
 
 				loops[doItem['id']] = doItem;
-			}	
+			}
 		}
-	}	
+	}
 }
 
 function doSetupActions(setupId, actions, srcTopic, srcPayload)
@@ -545,8 +554,8 @@ function doSetupActions(setupId, actions, srcTopic, srcPayload)
 
 function doSetupRequest(setupId, setupCfg, requestData)
 {
-	console.log('doSetupRequest');
-	console.log(requestData);
+	//console.log('doSetupRequest');
+	//console.log(requestData);
 	const data = JSON.stringify(requestData);
 	const apiUrl = serverConfiguration.dsUrl + 'api/objects/call/iot-mac-setup-request';
 
@@ -571,8 +580,8 @@ function doSetupRequest(setupId, setupCfg, requestData)
 		});
 
 		res.on('end', () => {
-			console.log('Response from ', setupId);
-			console.log(data);
+			//console.log('Response from ', setupId);
+			//console.log(data);
 			const parsedData = JSON.parse(data);
 			if (parsedData['callActions'] !== undefined)
 			{
@@ -584,16 +593,16 @@ function doSetupRequest(setupId, setupCfg, requestData)
 						if (error) {
 							console.error(error)
 						}
-					});		
+					});
 				}
-			}		
+			}
 		});
 	});
-	
+
 	req.on('error', error => {
 		console.error(error);
 	})
-	
+
 	req.write(data);
 	req.end();
 }
@@ -615,29 +624,29 @@ function runEventLoopItem(loop)
 		if (deviceInfo[prop['property']] === undefined)
 			continue;
 
-		if (loopCounters[loop['id']] === undefined)	
+		if (loopCounters[loop['id']] === undefined)
 			loopCounters[loop['id']] = {};
 		if (loopCounters[loop['id']][lpid] === undefined)
 		{
 			loopCounters[loop['id']][lpid] = deviceInfo[prop['property']];
 			//console.log("INIT LOOP COUNTER "+loop['id']+" /" + lpid + " TO "+loopCounters[loop['id']][lpid]);
-		}	
+		}
 		let currentValue = loopCounters[loop['id']][lpid];
 		let newValue = -1;
-		
+
 		if (loop['op'] === '+')
 		{
 			newValue = currentValue + 20;
 			if (newValue > prop['value-max'])
 				newValue = prop['value-max'];
 		}
-		else	
+		else
 		{
 			newValue = currentValue - 20;
 			if (newValue < prop['value-min'])
 				newValue = prop['value-min'];
 
-			if (newValue === 0)	
+			if (newValue === 0)
 				newValue = 1;
 		}
 //		deviceInfo[prop['property']] = newValue;
@@ -658,7 +667,6 @@ function runEventLoopItem(loop)
 			});
 		}
 	}
-	//let deviceInfo = 
 }
 
 function checkStopLoop (topic, payload)
@@ -709,11 +717,11 @@ function sendToServer(dataStruct)
 			//console.log(data);
 		});
 	});
-	
+
 	req.on('error', error => {
 		console.error(error);
 	})
-	
+
 	req.write(data);
 	req.end();
 }
@@ -721,7 +729,7 @@ function sendToServer(dataStruct)
 function saveInfo()
 {
 	const fileName = '/var/lib/shipard-node/tmp/mqtt-engine-info.json';
-	
+
 	const data = JSON.stringify(iotEngineInfo);
 	//console.log(data);
 	fs.writeFileSync(fileName, data, function (err) {
@@ -736,7 +744,7 @@ function loadInfo()
 	try {
 		const fileContent = fs.readFileSync(fileName).toString();
 		iotEngineInfo = JSON.parse(fileContent);
-	}	
+	}
 	catch (err) {
 		//console.error(err)
 		iotEngineInfo = {};
