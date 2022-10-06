@@ -182,12 +182,18 @@ class ImageResizer
 				' '. $outputFileParam . "\"" . $this->cacheFullFileName . "\"";
 		else
 		{
-			$resizeViaPIL = intval($this->app->serverCfg['resizeViaPIL'] ?? 0);
-			if ($resizeViaPIL && $srcType === '.jpg')
+			$resizeVia = intval($this->app->serverCfg['imgResizeVia'] ?? $this->app->serverCfg['resizeViaPIL'] ?? 0);
+
+			if ($resizeVia && $srcType === '.jpg')
 			{
-				$cmd = '/usr/lib/shipard-node/tools/shn-resize-image.py' .
-					" \"" . $srcFileName . "\"" .
-					" \"" . $this->cacheFullFileName . "\"";
+				if ($resizeVia === 1)
+					$cmd = '/usr/lib/shipard-node/tools/shn-resize-image.py' .
+						" \"" . $srcFileName . "\"" .
+						" \"" . $this->cacheFullFileName . "\"";
+				else // 2
+					$cmd = '/usr/bin/vips thumbnail ' .
+						" \"" . $srcFileName . "\"" .
+						" \"" . $this->cacheFullFileName . "\" 960";
 			}
 			else
 			{
