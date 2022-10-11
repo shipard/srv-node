@@ -35,8 +35,10 @@ class Cameras extends \Shipard\host\Core
 	{
 		foreach ($this->app->nodeCfg['cfg']['cameras'] as $cam)
 		{
+			$camType = $cam['type'] ?? 0;
 			$this->checkHostService ('shn-cam-picture-'.$cam['ndx'], '/etc/shipard-node/scripts/cameras');
-			$this->checkHostService ('shn-cam-video-'.$cam['ndx'], '/etc/shipard-node/scripts/cameras');
+			if ($camType === 0)
+				$this->checkHostService ('shn-cam-video-'.$cam['ndx'], '/etc/shipard-node/scripts/cameras');
 		}
 
 		if ($this->vehicleDetectEnabled())
@@ -56,26 +58,30 @@ class Cameras extends \Shipard\host\Core
 
 	function createScriptsForOneCamera($cam)
 	{
-		$captureDir = $this->app->videoDir.$cam['ndx'];
-		if (!is_dir($captureDir))
-			mkdir($captureDir, 0755, TRUE);
+		$camType = $cam['type'] ?? 0;
 
-		$captureVideoCmd = '';
+		if ($camType == 0)
+		{
+			$captureDir = $this->app->videoDir.$cam['ndx'];
+			if (!is_dir($captureDir))
+				mkdir($captureDir, 0755, TRUE);
 
-		$captureVideoCmd .= 'cd ' . $captureDir . "\n";
-		$captureVideoCmd .= 'ffmpeg -rtsp_transport tcp -i "' . $cam['cfg']['streamURL'] . '" -c copy -f segment -segment_time 900 -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 "%Y-%m-%d_%H-%M-%S.mp4" > /dev/null 2>&1 &' . "\n";
-		$captureVideoCmd .= "echo $! > /var/run/shn-cam-video-{$cam['ndx']}.pid\n";
-		$captureVideoCmd .= "exit 0\n";
+			$captureVideoCmd = '';
 
-		// -- capture
-		$cfn = '/etc/shipard-node/scripts/cameras/shn-cam-video-' . $cam['ndx'];
+			$captureVideoCmd .= 'cd ' . $captureDir . "\n";
+			$captureVideoCmd .= 'ffmpeg -rtsp_transport tcp -i "' . $cam['cfg']['streamURL'] . '" -c copy -f segment -segment_time 900 -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 "%Y-%m-%d_%H-%M-%S.mp4" > /dev/null 2>&1 &' . "\n";
+			$captureVideoCmd .= "echo $! > /var/run/shn-cam-video-{$cam['ndx']}.pid\n";
+			$captureVideoCmd .= "exit 0\n";
 
-		$captureVideoShellScript = "#!/bin/sh\n\n" . $captureVideoCmd . "\n\n";
-		file_put_contents($cfn . '.sh', $captureVideoShellScript);
-		chmod($cfn . '.sh', 0755);
+			// -- capture
+			$cfn = '/etc/shipard-node/scripts/cameras/shn-cam-video-' . $cam['ndx'];
+
+			$captureVideoShellScript = "#!/bin/sh\n\n" . $captureVideoCmd . "\n\n";
+			file_put_contents($cfn . '.sh', $captureVideoShellScript);
+			chmod($cfn . '.sh', 0755);
 
 		// -- capture systemd
-		$captureVideoSystemd =
+			$captureVideoSystemd =
 			"[Unit]
 Description=shipard-node video capture cam {$cam['ndx']} - ver. 0.1
 After=network.target auditd.service
@@ -93,8 +99,8 @@ StartLimitBurst=3
 WantedBy=multi-user.target
 
 			";
-		file_put_contents($cfn . '.service', $captureVideoSystemd);
-
+			file_put_contents($cfn . '.service', $captureVideoSystemd);
+		}
 
 		// -- pictures
 		$cfn = '/etc/shipard-node/scripts/cameras/shn-cam-picture-' . $cam['ndx'];
