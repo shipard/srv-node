@@ -230,25 +230,26 @@ class Archive
 			socket_close($sock);
 
 			// -- send to mqtt
+			/*
 			$topic = 'shp/sensors/va/video-archive-files-size';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesSize']));
 			$topic = 'shp/sensors/va/video-archive-files-count';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['filesCnt']));
 			$topic = 'shp/sensors/va/video-archive-len-hours';
 			$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['hours']));
-
+			*/
 			$netDataStrValue = '';
 			foreach ($this->content['video']['stats']['cams'] as $camNdx => $cam)
 			{
-				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/files-size';
-				$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams'][$camNdx]['filesSize']));
+				//$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/files-size';
+				//$this->app->sendMqttMessage($topic, strval($this->content['video']['stats']['cams'][$camNdx]['filesSize']));
 
-				$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/hourly-files-size';
+				//$topic = 'shp/sensors/va/cams/'.$cam['camId'].'/hourly-files-size';
 
 				$camHourFilesSize = $this->content['video']['stats']['cams-hour'][$camNdx]['filesSize'] ?? 0;
 				$camHourFilesCnt = $this->content['video']['stats']['cams-hour'][$camNdx]['filesCnt'] ?? 0;
 
-				$this->app->sendMqttMessage($topic, strval($camHourFilesSize));
+				//$this->app->sendMqttMessage($topic, strval($camHourFilesSize));
 
 				$fsgb = round($this->content['video']['stats']['cams'][$camNdx]['filesSize'] / 1073741824, 3);
 				$netDataStrValue .= 'cameras.diskUsage.'.$camNdx.': '.$fsgb.'|g|#units=GB,name='.$cam['camId'].",family=cameras.diskUsage\n";
