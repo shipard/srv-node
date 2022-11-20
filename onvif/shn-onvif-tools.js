@@ -62,6 +62,7 @@ device.init().then((info) => {
 		console.log(JSON.stringify(info, null, '  '));
 
 }).catch((error) => {
+	console.error("--- ONVIF ERROR ON "+camIPAddress+" ---");
 	console.error(error);
 	process.exit(1);
 });
