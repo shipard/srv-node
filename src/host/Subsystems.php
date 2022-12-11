@@ -88,7 +88,7 @@ class Subsystems extends \Shipard\host\Core
 				$cmd = "service proftpd restart";
 				shell_exec($cmd);
 			}
-		}	
+		}
 	}
 
 	function needFtpDaemon()
@@ -175,7 +175,7 @@ class Subsystems extends \Shipard\host\Core
 
 		// -- nginx cfg
 		$fn = '/etc/nginx/conf.d/shpd-server.conf';
-		if (!is_file($fn)) 
+		if (!is_file($fn))
 		{
 			symlink('/usr/lib/shipard-node/etc/nginx/shpd-server.conf', $fn);
 			$needRestart = TRUE;
@@ -423,19 +423,19 @@ class Subsystems extends \Shipard\host\Core
 		if (is_dir ('/etc/php/8.1'))
 		{
 			$fn = '/etc/php/8.1/fpm/pool.d/zz-shpd-php-fpm.conf';
-			if (!is_file($fn)) 
+			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/zz-shpd-php-fpm.conf', $fn);
 				$needRestart = TRUE;
 			}
 			$fn = '/etc/php/8.1/fpm/conf.d/95-shpd-php.ini';
-			if (!is_file($fn)) 
+			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
 				$needRestart = TRUE;
 			}
 			$fn = '/etc/php/8.1/cli/conf.d/95-shpd-php.ini';
-			if (!is_file($fn)) 
+			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
 			}
@@ -493,11 +493,23 @@ class Subsystems extends \Shipard\host\Core
 			passthru($cmd);
 		}
 
+		$lcSshFN = $lcSshPath.'/shn_ssh_key_rsa2048_ec';
+		if (!is_readable($lcSshFN))
+		{
+			$cmd = 'ssh-keygen -b 2048 -t rsa -f '.$lcSshFN.' -q -N ""';
+			passthru($cmd);
+			$pubkeyContent = file_get_contents($lcSshFN.'.pub');
+			$pubkeyContentEC = substr($pubkeyContent, 8); // skip `ssh-rsa ` on begin
+			file_put_contents($lcSshFN.'.pub_ec', $pubkeyContentEC);
+		}
+
 		$tftpdDir = $this->tftpHomeDir();
 		if ($tftpdDir)
 		{
 			$this->copyFileWithCheck('shn_ssh_key.pub', $lcSshPath, $tftpdDir);
 			$this->copyFileWithCheck('shn_ssh_key_dsa.pub', $lcSshPath, $tftpdDir);
+			$this->copyFileWithCheck('shn_ssh_key_rsa2048_ec.pub', $lcSshPath, $tftpdDir);
+			$this->copyFileWithCheck('shn_ssh_key_rsa2048_ec.pub_ec', $lcSshPath, $tftpdDir);
 		}
 
 		// -- edge-core ssh config
