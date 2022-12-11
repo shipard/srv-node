@@ -128,7 +128,7 @@ class EdgeCore extends \Shipard\lanControl\devices\LanControlDeviceCore
 			]
 		];
 
-		$typeParts = explode('-', $info['device-type']);
+		$typeParts = explode('-', $info['device-type'] ?? 'unknown-type');
 		$osName = 'edgecore-'.strtolower((isset($typeParts[0]) ? $typeParts[0] : 'unknown'));
 		$agentInfo['osValues']['osName'] = $osName;
 
