@@ -10,6 +10,16 @@ var mqtt = require('mqtt')
 		, dgram = require('dgram')
 		, net = require('net');
 
+
+const onEventType = {
+	deviceAction: 0,
+	mqttMsg: 1,
+	readerValue: 2,
+	setupAction: 3,
+	sensorValue: 9.
+};
+
+
 let mqtt_url = 'mqtt://localhost:1883';
 let auth = (mqtt_url.auth || ':').split(':');
 let configuration = {};
@@ -24,6 +34,8 @@ topics.push(sensorsTopic + '#');
 
 let topicZigbee = 'zigbee2mqtt/bridge/devices';
 topics.push(topicZigbee);
+
+let g_data = {date: {}, sensors: {}};
 
 // -- Load config
 let configFile = '/etc/shipard-node/mqtt-engine.json';
@@ -124,6 +136,64 @@ function eventLoop()
 	}
 
 	setTimeout (function () {eventLoop()}, 250);
+}
+
+
+const g_date_days =['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+let g_clocks_hhmm = '';
+let g_clocksCounter = 0;
+function clocks()
+{
+	g_clocksCounter++;
+
+	let nowZ = new Date();
+	let now = new Date(nowZ.getTime() - nowZ.getTimezoneOffset()*60*1000);
+
+	var dateISO = now.toISOString();
+
+	const topic = 'shp/clocks/';
+
+	var timeHHMM = dateISO.substring(11, 16);
+
+	if (g_clocks_hhmm !== timeHHMM)
+	{
+		g_data.date['HDM'] = now.getDate()+'.'+(now.getMonth() + 1)+'.';
+		g_data.date['dow'] = now.getDay();
+		g_data.date['dowNameShort'] = g_date_days[now.getDay()];
+
+		mqttClient.publish (topic + 'hhmm', timeHHMM, {qos: 0, retain: false}, (error) => {
+			if (error) {
+				console.error(error)
+			}
+		});
+
+		g_clocks_hhmm = timeHHMM;
+	}
+}
+
+setInterval(clocks, 1000);
+
+
+function replaceVariables(template, srcPayload)
+{
+	const result = template.replace(
+		/\{\{(.+?)\}\}/g,
+		(match, key) => {
+			let parts = key.split('.');
+			if (parts[0] === 'srcPayload' && srcPayload[parts[1]] !== undefined)
+			{
+				return srcPayload[parts[1]];
+			}
+			else if (g_data[parts[0]] !== undefined && g_data[parts[0]][parts[1]] !== undefined)
+			{
+				return g_data[parts[0]][parts[1]];
+			}
+
+			console.log("invalid variable: ", key);
+			return '!!!';
+		});
+
+	return result;
 }
 
 function setInfo (topic, data)
@@ -381,36 +451,22 @@ async function doEventOn(topic, payload)
 {
 	let event = configuration['eventsOn'][topic];
 
-	/*
-	if (event['scene'] !== undefined)
-	{
-		//console.log ("!!! SCENE !!!");
-		const setupInfo = getInfo(event['setup']);
-		//console.log("setupInfo: ", setupInfo);
-
-		if (setupInfo['scene'] === undefined)
-		{
-			//console.log("Unknown place on setup "+event['setup']);
-			return;
-		}
-
-		if (setupInfo['scene'] !== event['scene'])
-		{
-			//console.log("not valid on this scene");
-			return;
-		}
-	}
-	*/
-
 	let payloadData = {};
-	try {
-		payloadData = JSON.parse(payload);
-	}	catch (e) {
-		payloadData = {'_payload': payload};
-		console.log('invalid json');
+	if (payload[0] === '{')
+	{
+		try {
+			payloadData = JSON.parse(payload);
+		}	catch (e) {
+			payloadData = {'_payload': payload};
+			console.log('invalid json: ', payload, payloadData);
+		}
 	}
-	if (payloadData['action_group'] !== undefined)
-		return;
+	else
+	{
+		payloadData = {'_payload': payload};
+	}
+	//if (payloadData['action_group'] !== undefined)
+	//	return;
 
 	checkStopLoop (topic, payloadData);
 	//console.log ("INCOMING: "+topic+" ---> "+payload);
@@ -438,7 +494,7 @@ async function doEventOn(topic, payload)
 		}
 
 
-		if (onItem['type'] === 0 || onItem['type'] === 3 || onItem['type'] === 4)
+		if (onItem['type'] === onEventType.deviceAction || onItem['type'] === onEventType.setupAction || onItem['type'] === 4)
 		{
 			if (onItem['dataItem'] !== undefined && onItem['dataItem'] in payloadData)
 			{
@@ -449,11 +505,12 @@ async function doEventOn(topic, payload)
 			}
 		}
 		else
-		if (onItem['type'] === 9)
+		if (onItem['type'] === onEventType.sensorValue)
 		{ // sensor value
-			let sensorValue = parseInt(payloadData);
+			let sensorValue = parseFloat(payloadData['_payload']);
 			if (onItem['sensorValueFrom'] <= sensorValue && onItem['sensorValueTo'] >= sensorValue)
 			{
+				//console.log ("__ON_SENSOR_VALUE__", payloadData);
 				runDoEvents(onItem['do'], topic, payloadData);
 			}
 		}
@@ -480,6 +537,7 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 	for(let doItemId in doEvents)
 	{
 		let doItem = doEvents[doItemId];
+		//console.log(doItemId, doItem);
 		if (doItemId === 'setProperties')
 		{
 			for(let doPropertyItemId in doItem)
@@ -497,7 +555,7 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 
 				if (!payload)
 				{
-
+					console.log("--NO PAYLOAD--");
 					continue;
 				}
 
@@ -518,6 +576,26 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				let doActionItem = doItem[setupId];
 				//console.log('sendSetupRequestAction: ', setupId, doActionItem);
 				doSetupActions(setupId, doActionItem['actions'], srcTopic, srcPayload);
+			}
+		}
+		else if (doItemId === 'sendMqtt')
+		{
+			//console.log('srcPayload2: ', srcPayload);
+			//console.log('sendMqtt2: ', doItem);
+			for(let mqttTopic in doItem)
+			{
+				let mqttPayloads = doItem[mqttTopic];
+				for(let payloadValueId in mqttPayloads.payloads)
+				{
+					let payloadTemplate = mqttPayloads.payloads[payloadValueId];
+					let payloadValue = replaceVariables(payloadTemplate, srcPayload);
+					//console.log (" --> "+mqttTopic+" --> " + payloadValue);
+					mqttClient.publish (mqttTopic, payloadValue, {qos: 0, retain: false}, (error) => {
+						if (error) {
+							console.error(error)
+						}
+					});
+				}
 			}
 		}
 		else if (doItemId === 'startLoop')
