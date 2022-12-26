@@ -32,10 +32,13 @@ topics.push(ibInfoTopic);
 let sensorsTopic = 'shp/sensors/';
 topics.push(sensorsTopic + '#');
 
+let paramsTopic = 'shp/params/';
+topics.push(paramsTopic + '#');
+
 let topicZigbee = 'zigbee2mqtt/bridge/devices';
 topics.push(topicZigbee);
 
-let g_data = {date: {}, sensors: {}};
+let g_data = {date: {}, sensors: {}, params: {}};
 
 // -- Load config
 let configFile = '/etc/shipard-node/mqtt-engine.json';
@@ -94,6 +97,12 @@ mqttClient.on('connect', function() {
 		if (topic.startsWith('shp/setups/'))
 		{
 			doSetup(topic, message.toString());
+			return;
+		}
+
+		if (topic.startsWith('shp/params/'))
+		{
+			doParam(topic, message.toString());
 			return;
 		}
 
@@ -198,7 +207,10 @@ function replaceVariables(template, srcPayload)
 
 function setInfo (topic, data)
 {
+	//console.log("SET-INFO: ", topic, data);
 	iotEngineInfo[topic] = data;
+	let now = new Date().getTime();
+	iotEngineInfo[topic]['__time'] = now;
 }
 
 function getInfo (topic)
@@ -347,6 +359,46 @@ function doSetupGet(setupId)
 	});
 }
 
+function doParam(topic, payload)
+{
+	let operation = '';
+	let parts = topic.split('/');
+	operation = parts.pop();
+	let paramId = parts.pop();
+
+	if (operation === '' || paramId === 'params')
+		return;
+
+	if (configuration['params'][paramId] === undefined)
+	{
+		console.log ("invalid param: `"+paramId+'`');
+		return;
+	}
+
+	if (operation !== 'set' && operation !== 'get')
+	{
+		console.log ("invalid param operation");
+		return;
+	}
+
+	let safePayload = payload.replace(/[^\x19-\x7F]/g,"").replace(/\u0000/g, '\\0');
+	//console.log ("PARAM: "+paramId+", operation: `"+operation+"`");
+
+	if (operation === 'set')
+	{
+		g_data['params'][paramId] = safePayload;
+	}
+	else if (operation === 'get')
+	{
+		const topic = 'shp/params/'+paramId;
+		mqttClient.publish (topic, g_data['params'][paramId], {qos: 0, retain: false}, (error) => {
+			if (error) {
+				console.error(error)
+			}
+		});
+	}
+}
+
 function onSensors(topic, payload)
 {
 	let payloadData = JSON.parse(payload);
@@ -378,6 +430,13 @@ function doSensor(topic, payload)
 	topicIds = topicIds.replace('/', '.');
 
 	let now = new Date().getTime();
+
+	const sensorCfg = configuration['topics'][topic];
+	if (sensorCfg !== undefined && sensorCfg['id'] !== undefined && sensorCfg['id'] !== '')
+	{
+		const sensorId = sensorCfg['id'];
+		g_data['sensors'][sensorId] = {value: safePayload, time: now};
+	}
 
 	let sensorInfoData = {
 		'topic': topic,
@@ -465,8 +524,8 @@ async function doEventOn(topic, payload)
 	{
 		payloadData = {'_payload': payload};
 	}
-	//if (payloadData['action_group'] !== undefined)
-	//	return;
+	if (payloadData['action_group'] !== undefined)
+		return;
 
 	checkStopLoop (topic, payloadData);
 	//console.log ("INCOMING: "+topic+" ---> "+payload);
@@ -508,7 +567,14 @@ async function doEventOn(topic, payload)
 		if (onItem['type'] === onEventType.sensorValue)
 		{ // sensor value
 			let sensorValue = parseFloat(payloadData['_payload']);
-			if (onItem['sensorValueFrom'] <= sensorValue && onItem['sensorValueTo'] >= sensorValue)
+			const sensorValueFrom = parseFloat(replaceVariables(onItem['sensorValueFrom'], {}));
+			const sensorValueTo = parseFloat(replaceVariables(onItem['sensorValueTo'], {}));
+
+			//console.log ("check sensor: " + sensorValue);
+			//console.log ("  - valueFrom", onItem['sensorValueFrom'], sensorValueFrom);
+			//console.log ("  - valueTo", onItem['sensorValueTo'], sensorValueTo);
+
+			if (sensorValueFrom <= sensorValue && sensorValueTo >= sensorValue)
 			{
 				//console.log ("__ON_SENSOR_VALUE__", payloadData);
 				runDoEvents(onItem['do'], topic, payloadData);
@@ -523,9 +589,6 @@ async function doEventOn(topic, payload)
 
 function doDevice(topic, payload)
 {
-	if (configuration['eventsOn'] === undefined || configuration['eventsOn'][topic] === undefined)
-		return;
-	let event = configuration['eventsOn'][topic];
 	let payloadData = JSON.parse(payload);
 	if (payloadData['action_group'] !== undefined)
 		return;
@@ -546,8 +609,16 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				let payload = null;
 				if (doPropertiesItem['data'] !== undefined)
 				{
-					let pp = doPropertiesItem['data'];
-					payload = JSON.stringify(pp);
+					payload = {};
+					const pp = doPropertiesItem['data'];
+					for(let ppId in pp)
+					{
+						const dataItem = pp[ppId];
+						if (dataItem['when'] !== undefined && !checkWhen(dataItem['when']))
+							continue;
+						payload[ppId] = dataItem['value'];
+					}
+					payload = JSON.stringify(payload);
 				}
 				else
 				if (doPropertiesItem['payload'] !== undefined)
@@ -587,7 +658,11 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				let mqttPayloads = doItem[mqttTopic];
 				for(let payloadValueId in mqttPayloads.payloads)
 				{
-					let payloadTemplate = mqttPayloads.payloads[payloadValueId];
+					const plItem = mqttPayloads.payloads[payloadValueId];
+					if (plItem['when'] !== undefined && !checkWhen(plItem['when']))
+						continue;
+
+					let payloadTemplate = plItem['value'];
 					let payloadValue = replaceVariables(payloadTemplate, srcPayload);
 					//console.log (" --> "+mqttTopic+" --> " + payloadValue);
 					mqttClient.publish (mqttTopic, payloadValue, {qos: 0, retain: false}, (error) => {
@@ -610,6 +685,29 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 			}
 		}
 	}
+}
+
+function checkWhen(when)
+{
+	// console.log("CHECK-WHEN", when);
+	// CHECK-WHEN { type: 'sensorValue', sensorId: 'test-napeti-1', value: '0' }
+
+	if (when['type'] === 'sensorValue')
+	{
+		const sensorData = g_data['sensors'][when['sensorId']];
+		if (sensorData === undefined)
+		{
+			//console.log("SENSOR-NOT-FOUND", g_data['sensors']);
+			return 0;
+		}
+		//console.log("SENSOR-DATA: ", sensorData);
+		if (when['value'] == sensorData['value'])
+			return 1;
+
+		return 0;
+	}
+
+	return 1;
 }
 
 function doSetupActions(setupId, actions, srcTopic, srcPayload)
@@ -689,11 +787,14 @@ function doSetupRequest(setupId, setupCfg, requestData)
 loopCounters = {};
 function runEventLoopItem(loop)
 {
+	//console.log(loop);
 	for(let lpid in loop['properties'])
 	{
 		let prop = loop['properties'][lpid];
 
 		//console.log("!!! "+prop['deviceTopic']);
+		//console.log(prop);
+		//console.log(iotEngineInfo);
 		//console.log(iotEngineInfo[prop['deviceTopic']]);
 
 		if (iotEngineInfo[prop['deviceTopic']] === undefined)
@@ -808,7 +909,7 @@ function saveInfo()
 {
 	const fileName = '/var/lib/shipard-node/tmp/mqtt-engine-info.json';
 
-	const data = JSON.stringify(iotEngineInfo);
+	const data = JSON.stringify({'iotEngineInfo': iotEngineInfo, 'g_data': g_data});
 	//console.log(data);
 	fs.writeFileSync(fileName, data, function (err) {
 		if (err)
@@ -821,7 +922,31 @@ function loadInfo()
 	const fileName = '/var/lib/shipard-node/tmp/mqtt-engine-info.json';
 	try {
 		const fileContent = fs.readFileSync(fileName).toString();
-		iotEngineInfo = JSON.parse(fileContent);
+		let data = JSON.parse(fileContent);
+		if (data['iotEngineInfo'] === undefined)
+		{
+			iotEngineInfo = data;
+		}
+		else
+		{
+			iotEngineInfo = data['iotEngineInfo'];
+			if (data['g_data'] !== undefined)
+				g_data = data['g_data'];
+		}
+
+		if (g_data['params'] === undefined)
+			g_data['params'] = {};
+
+		// -- check params
+		for(var paramId in configuration['params'])
+		{
+			let param = configuration['params'][paramId];
+			if (g_data['params'][paramId] === undefined)
+			{
+				g_data['params'][paramId] = String(param['defaultValue']);
+				//console.log("ADD PARAM: ", g_data['params'][paramId]);
+			}
+		}
 	}
 	catch (err) {
 		//console.error(err)
