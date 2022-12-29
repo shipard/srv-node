@@ -514,6 +514,7 @@ class Subsystems extends \Shipard\host\Core
 
 		// -- edge-core ssh config
 		$this->copyFileWithCheck ('config_switch-edgecore', '/usr/lib/shipard-node/etc/sshDevicesConfigs', $lcSshPath);
+		$this->copyFileWithCheck ('config_mikrotik', '/usr/lib/shipard-node/etc/sshDevicesConfigs', $lcSshPath);
 
 
 		// -- lanControl requests dir
