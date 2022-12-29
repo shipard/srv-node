@@ -13,6 +13,11 @@ class EdgeCore extends \Shipard\lanControl\devices\LanControlDeviceCore
 		$user = 'js';
 		$ip = $this->deviceCfg['ipManagement'];
 
+		$sshMode = intval($this->deviceCfg['cfg']['sshMode'] ?? 0);
+		$sshKeyName = 'shn_ssh_key_dsa'; // old DSA mode
+		if ($sshMode === 1)
+			$sshKeyName = 'shn_ssh_key_rsa2048_ec'; // new RSA mode
+
 		$cmd = '';
 
 		switch ($commandType)
@@ -22,7 +27,7 @@ class EdgeCore extends \Shipard\lanControl\devices\LanControlDeviceCore
 			case 'getDeviceInfo': $cmd = '/usr/lib/shipard-node/tools/lanControl/switch-edgecore_getDeviceInfo.sh '; break;
 		}
 
-		$cmd .= $ip.' '.$user.' '.$this->cmdScriptFileName;
+		$cmd .= $ip.' '.$user.' '.' '.$sshKeyName.' '.$this->cmdScriptFileName;
 
 		$cmd .= ' >'.$this->cmdResultFileName;
 		$cmd .= ' 2>'.$this->cmdErrorsFileName;
