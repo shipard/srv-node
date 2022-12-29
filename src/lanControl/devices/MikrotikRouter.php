@@ -20,6 +20,7 @@ class MikrotikRouter extends \Shipard\lanControl\devices\LanControlDeviceCore
 		$cmd = 'ssh ';
 		$cmd .= $user.'@'.$ip;
 		$cmd .= ' -p '.$port;
+		$cmd .= ' -F /var/lib/shipard-node/lc/ssh/config_mikrotik';
 		$cmd .= ' -i /var/lib/shipard-node/lc/ssh/shn_ssh_key';
 		$cmd .= ' -oStrictHostKeyChecking=no';
 
