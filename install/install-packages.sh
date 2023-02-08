@@ -26,11 +26,9 @@ if [ "$NAME" = "Ubuntu" ]; then
     currentVersion=$(versionToInt $VERSION_ID)
     min81Version=$(versionToInt 22.04.0)
 
-    if [ "$currentVersion" -lt "$min81Version" ]; then
-        add-apt-repository --yes ppa:ondrej/php
-        apt --assume-yes --quiet update
-        apt --assume-yes --quiet upgrade
-    fi
+    add-apt-repository --yes ppa:ondrej/php
+    apt --assume-yes --quiet update
+    apt --assume-yes --quiet upgrade
 else
     sudo wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
