@@ -139,10 +139,14 @@ class ShpdBuildApp
 		$installCmd .= "\nexit 0\n";
 		file_put_contents($installFileNameDebian, $installCmd);
 
-		$cmd = "scp $verFileName $pkgFileName $installFileNameDebian shipardPackages:/var/www/webs/download.shipard.org/shipard-node/server-app-2/";
+		$cmd = "scp $verFileName $pkgFileName $installFileNameDebian shipardPackages:/var/www/shpd-webs/download.shipard.org/shipard-node/server-app-2/";
 		echo "* Copying to server...\n";
 		//echo ($cmd);
+
 		passthru($cmd);
+		$cmd = "scp $verFileName $pkgFileName $installFileNameDebian shipardPackagesBackup:/var/www/shpd-webs/download.shipard.org/shipard-node/server-app-2/";
+		passthru($cmd);
+
 		echo "=== DONE ===\n";
 	}
 
