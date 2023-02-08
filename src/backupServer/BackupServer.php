@@ -84,7 +84,7 @@ class BackupServer extends \Shipard\host\Core
 			if (!is_dir($syncDestDir))
 				mkdir ($syncDestDir, 0750, TRUE);
 
-			$cmd = "rsync -azk -e \"ssh -p $port\" {$remoteUser}@$hostName:{$backup['serverPath']}/att $syncDestDir";
+			$cmd = "rsync -ak -e \"ssh -p $port\" {$remoteUser}@$hostName:{$backup['serverPath']}/att $syncDestDir";
 			echo $cmd . "\n";
 			passthru($cmd);
 		}
