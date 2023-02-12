@@ -338,6 +338,35 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	protected function bkpSrvCheckAtts()
+	{
+		$eng = new \Shipard\backupServer\BackupServer($this);
+
+		$server = $this->arg('server');
+		if ($server)
+			$eng->server = $server;
+		$dsId = $this->arg('dsId');
+		if ($dsId)
+			$eng->dsId = $dsId;
+
+		$checkPeriod = $this->arg('checkPeriod');
+		if ($checkPeriod)
+			$eng->checkPeriod = $checkPeriod;
+
+		$eng->init();
+		$eng->bkpSrvCheckAtts();
+		return TRUE;
+	}
+
+	protected function	bkpSrvRepairAtts()
+	{
+		$eng = new \Shipard\backupServer\BackupServer($this);
+
+		$eng->init();
+		$eng->bkpSrvRepairAtts();
+		return TRUE;
+	}
+
 	protected function bkpVMSBackup()
 	{
 		$eng = new \Shipard\backupVMS\BackupVMS($this);
@@ -368,6 +397,20 @@ class NodeApp extends \Shipard\Application
 
 		$url = $this->serverCfg['dsUrl'].'/upload/mac.lan.lans';
 		$result = $this->http_post($url, $introText);
+	}
+
+	function version ()
+	{
+		if ($this->versionInfo['version'] === '0.0')
+		{
+			$pkg = $this->loadCfgFile('/usr/lib/shipard-node/package.json');
+			if ($pkg)
+			{
+				echo "devel ".$pkg['version']."\n";
+				return;
+			}
+		}
+		echo $this->versionInfo['version']."\n";
 	}
 
 	public function run ()
@@ -413,12 +456,17 @@ class NodeApp extends \Shipard\Application
 			case	'iot-box-info':					return $this->iotBoxInfo();
 
 			case	'bkpsrv-download':			return $this->bkpSrvDownload();
+			case	'bkpsrv-check-atts':		return $this->bkpSrvCheckAtts();
+			case	'bkpsrv-repair-atts':		return $this->bkpSrvRepairAtts();
 
 			case	'bkpvms-backup':				return $this->bkpVMSBackup();
 
 			case	'netdata-alarm':				return $this->netDataAlarm();
 			case	'netdata-alarms-api-on':	return $this->netDataAlarmsApiOn();
+
+			case	'version':							return $this->version();
 		}
+
 		echo ("unknown or nothing param....\r\n");
 		return FALSE;
 	}
