@@ -12,6 +12,8 @@ class BackupVMS extends \Shipard\host\Core
 	var $dateStrDir = '';
 	var $now;
 
+	var $info = [];
+
 	public function init()
 	{
 		$this->backupCfg = $this->app->loadCfgFile('/etc/shipard-node/backupVMS.json');
@@ -22,6 +24,9 @@ class BackupVMS extends \Shipard\host\Core
 		$this->dateStr = $this->now->format('Y-m-d');
 		$this->dateStrDir = $this->now->format('Y/m/d');
 
+		$this->info['dateBegin'] = $this->now->format('Y-m-d H:i:s');
+		$this->info['dateEnd'] = NULL;
+
 		return TRUE;
 	}
 
@@ -30,10 +35,18 @@ class BackupVMS extends \Shipard\host\Core
 		if (!isset($this->backupCfg['containers']))
 			return;
 
+		$this->info['containers']	= [];
+
 		foreach ($this->backupCfg['containers'] as $vm)
 		{
 			$this->backupContainerFull($vm);
 		}
+
+		$now = new \DateTime();
+		$this->info['dateEnd'] = $now->format('Y-m-d H:i:s');
+
+		$backupInfoFileName = $this->backupCfg['destFolder'].'/'.'backup-info-'.$this->dateStr.'.json';
+		file_put_contents ($backupInfoFileName, json_encode($this->info, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
 	}
 
 	public function backupContainerFull($vm)
@@ -56,15 +69,18 @@ class BackupVMS extends \Shipard\host\Core
 
 		$cmd = 'lxc export '.$vm['id'].' '.$dstFileName.' -q > /dev/null';
 
-		echo $cmd."\n";
+		//echo $cmd."\n";
 		passthru($cmd);
 
 		$timeEnd = time();
 		$now = new \DateTime();
 		$vmBackupInfo['timeEnd'] = $now->format('Y-m-d H:i:s');
 		$vmBackupInfo['timeLen'] = $timeEnd - $timeBegin;
+		$vmBackupInfo['bkpFileName'] = $dstFileName;
 
 		file_put_contents ($vmBackupInfoFileName, json_encode($vmBackupInfo, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+
+		$this->info['containers'][$vm['id']] = $vmBackupInfo;
 	}
 
 	public function checkDay($vm)
