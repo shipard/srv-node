@@ -35,8 +35,6 @@ topics.push(sensorsTopic + '#');
 let paramsTopic = 'shp/params/';
 topics.push(paramsTopic + '#');
 
-let topicZigbee = 'zigbee2mqtt/bridge/devices';
-topics.push(topicZigbee);
 
 let g_data = {date: {}, sensors: {}, params: {}};
 
@@ -45,6 +43,20 @@ let configFile = '/etc/shipard-node/mqtt-engine.json';
 configuration = JSON.parse(fs.readFileSync(configFile).toString());
 serverConfiguration = JSON.parse(fs.readFileSync('/etc/shipard-node/server.json').toString());
 serverDeviceId = fs.readFileSync('/etc/e10-device-id.cfg').toString();
+
+//let topicZigbee = 'zigbee2mqtt/bridge/devices';
+let topicsZigbee = null;
+if (configuration['zigbee2mqttTopics'] !== undefined)
+{
+	topicsZigbee = [];
+	for(var key in configuration['zigbee2mqttTopics'])
+	{
+		let topic = configuration['zigbee2mqttTopics'][key] + '/bridge/devices';
+		topicsZigbee.push(topic);
+		topics.push(topic);
+	}
+}
+//console.log("zigbee: ", topicsZigbee);
 
 for(var key in configuration['listenTopics'])
 {
@@ -79,7 +91,7 @@ mqttClient.on('connect', function() {
 			return;
 		}
 
-		if (topic === topicZigbee)
+		if (topicsZigbee !== null && topicsZigbee.indexOf(topic) !== -1)
 		{
 			doZigbee(topic, message.toString());
 			return;
@@ -140,11 +152,11 @@ function eventLoop()
 	for(let loopId in loops)
 	{
 		let loop = loops[loopId];
-	//	console.log("LOOP: "+loopId);
+		console.log("LOOP: "+loopId);
 		runEventLoopItem(loop);
 	}
 
-	setTimeout (function () {eventLoop()}, 250);
+	setTimeout (function () {eventLoop()}, 100);
 }
 
 
@@ -473,37 +485,27 @@ function doZigbee (topic, payload)
 	let now = new Date().getTime();
 
 	// -- UPLOAD
-	let uploadString = null;
-	let uploadFileName = '';
-	if (topic === 'zigbee2mqtt/bridge/devices')
+	let payloadData = JSON.parse(payload);
+	if (payloadData == null)
 	{
-		let payloadData = JSON.parse(payload);
-		if (payloadData == null)
-		{
-			console.log("ZIGBEE-LOG parse data ERROR!");
-			return;
-		}
-
-		let data = {
-			'type': 'zigbee-devices-list',
-			'topic': topic,
-			'data': payloadData,
-			'time': now,
-		};
-		let hash = crypto.createHash('md5').update(topic).digest("hex");
-		uploadFileName = '/var/lib/shipard-node/upload/iot/zigbee-log-'+now+'-'+'-'+hash+'.json';
-		uploadString = JSON.stringify(data);
-	}
-
-	if (uploadFileName !== '')
-	{
-		fs.writeFileSync(uploadFileName, uploadString, function (err) {
-			if (err)
-				console.log(err);
-		});
-
+		console.log("ZIGBEE-LOG parse data ERROR!");
 		return;
 	}
+
+	let data = {
+		'type': 'zigbee-devices-list',
+		'topic': topic,
+		'data': payloadData,
+		'time': now,
+	};
+	let hash = crypto.createHash('md5').update(topic).digest("hex");
+	let uploadFileName = '/var/lib/shipard-node/upload/iot/zigbee-log-'+now+'-'+'-'+hash+'.json';
+	let uploadString = JSON.stringify(data);
+
+	fs.writeFileSync(uploadFileName, uploadString, function (err) {
+		if (err)
+			console.log(err);
+	});
 }
 
 async function doEventOn(topic, payload)
@@ -697,7 +699,7 @@ function checkWhen(when)
 		const sensorData = g_data['sensors'][when['sensorId']];
 		if (sensorData === undefined)
 		{
-			//console.log("SENSOR-NOT-FOUND", g_data['sensors']);
+			//console.log("SENSOR-NOT-FOUND: `"+g_data['sensors']+"`", g_data['sensors']);
 			return 0;
 		}
 		//console.log("SENSOR-DATA: ", sensorData);
