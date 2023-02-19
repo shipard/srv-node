@@ -414,7 +414,7 @@ class Subsystems extends \Shipard\host\Core
 	{
 		if (!is_dir('/var/run/php/') && !is_dir('/run/php/'))
 		{
-			$installCmd = "apt-get --assume-yes --quiet install php8.1-fpm";
+			$installCmd = "apt-get --assume-yes --quiet install php8.2-fpm";
 			passthru($installCmd);
 		}
 
@@ -439,10 +439,34 @@ class Subsystems extends \Shipard\host\Core
 			{
 				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
 			}
+
+			if ($needRestart)
+				$this->restartHostService('php8.1-fpm', 'reload');
 		}
 
-		if ($needRestart)
-			$this->restartHostService('php8.1-fpm', 'reload');
+		if (is_dir ('/etc/php/8.2'))
+		{
+			$fn = '/etc/php/8.2/fpm/pool.d/zz-shpd-php-fpm.conf';
+			if (!is_file($fn))
+			{
+				symlink('/usr/lib/shipard-node/etc/php/zz-shpd-php-fpm.conf', $fn);
+				$needRestart = TRUE;
+			}
+			$fn = '/etc/php/8.2/fpm/conf.d/95-shpd-php.ini';
+			if (!is_file($fn))
+			{
+				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
+				$needRestart = TRUE;
+			}
+			$fn = '/etc/php/8.2/cli/conf.d/95-shpd-php.ini';
+			if (!is_file($fn))
+			{
+				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
+			}
+
+			if ($needRestart)
+				$this->restartHostService('php8.2-fpm', 'reload');
+		}
 	}
 
 	function needLanControl()

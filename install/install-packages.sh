@@ -35,13 +35,13 @@ else
     apt --assume-yes --quiet update
 fi
 
-apt install --assume-yes --quiet php8.1-cli php8.1-curl php8.1-intl php8.1-zip php8.1-bcmath php8.1-mbstring php8.1-snmp php8.1-inotify
+apt install --assume-yes --quiet php8.2-cli php8.2-curl php8.2-intl php8.2-zip php8.2-bcmath php8.2-mbstring php8.2-snmp php8.2-inotify
 
 #####
 
 apt install --assume-yes --quiet net-tools fping mosquitto-clients
 
 ### redis
-apt install --assume-yes --quiet redis php8.1-redis
+apt install --assume-yes --quiet redis php8.2-redis
 
 
