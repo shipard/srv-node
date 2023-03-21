@@ -51,7 +51,7 @@ if (configuration['zigbee2mqttTopics'] !== undefined)
 	topicsZigbee = [];
 	for(var key in configuration['zigbee2mqttTopics'])
 	{
-		let topic = configuration['zigbee2mqttTopics'][key] + '/bridge/devices';
+		let topic = key + '/bridge/devices';
 		topicsZigbee.push(topic);
 		topics.push(topic);
 	}
@@ -492,10 +492,15 @@ function doZigbee (topic, payload)
 		return;
 	}
 
+	let topicParts = topic.split('/');
+	let serverNdx = 0;
+	if (configuration['zigbee2mqttTopics'][topicParts[0]] !== undefined)
+		serverNdx = configuration['zigbee2mqttTopics'][topicParts[0]]['serverNdx'];
+
 	let data = {
 		'type': 'zigbee-devices-list',
 		'topic': topic,
-		'serverId': serverConfiguration['serverId'],
+		'serverId': serverNdx,
 		'data': payloadData,
 		'time': now,
 	};
