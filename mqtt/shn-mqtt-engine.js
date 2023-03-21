@@ -495,6 +495,7 @@ function doZigbee (topic, payload)
 	let data = {
 		'type': 'zigbee-devices-list',
 		'topic': topic,
+		'serverId': serverConfiguration['serverId'],
 		'data': payloadData,
 		'time': now,
 	};
