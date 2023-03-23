@@ -164,6 +164,35 @@ class WebApplication extends \Shipard\Application
 		return $this->error(404, 'Not found');
 	}
 
+	protected function camerasPictures()
+	{
+		$this->checkCORS();
+
+		$redis = new \Redis ();
+		$redis->connect('127.0.0.1');
+
+		$pictures = [];
+
+		foreach ($this->nodeCfg['cfg']['cameras'] as $cam)
+		{
+			$camId = $cam['ndx'];
+
+			$imageKey = 'e10-monc-camLastImg-'.$camId;
+			$timeKey = 'e10-monc-camLastImgTime-'.$camId;
+			$thisTime = time();
+
+			$pictureTime = intval($redis->get($timeKey));
+			$error = (($thisTime - $pictureTime) > 10) ? 1 : 0;
+			$pictures [$camId] = ['image' => $redis->get($imageKey), 'time' => $redis->get($timeKey), 'error' => $error];
+		}
+
+		$data = json_encode ($pictures);
+
+		$this->sendJson($data);
+
+		return 0;
+	}
+
 	protected function cameraImageNew ()
 	{
 		$cameraNdx = $this->requestPath(1);
@@ -289,6 +318,38 @@ class WebApplication extends \Shipard\Application
 		exec ($cmd);
 	}
 
+	protected function getAllHeaders()
+	{
+		$headers = [];
+		foreach ($_SERVER as $name => $value)
+		{
+			if (substr($name, 0, 5) == 'HTTP_')
+				$headers[str_replace(' ', '-', strtolower(str_replace('_', ' ', substr($name, 5))))] = $value;
+		}
+		return $headers;
+	}
+
+	protected function checkCORS()
+	{
+		$headers = $this->getAllHeaders();
+		$origin = (isset($headers['origin'])) ? $headers['origin'] : '';
+		if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS')
+		{
+			header('Access-Control-Allow-Credentials: true');
+			header('Access-Control-Allow-Origin: '.$origin);
+			header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+			header('Access-Control-Allow-Headers: Origin, content-type');
+			die();
+		}
+
+		if ($origin !== '')
+		{
+			header('Access-Control-Allow-Origin: '.$origin);
+			header('Access-Control-Allow-Credentials: true');
+			header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+		}
+	}
+
 	public function run ()
 	{
 		$this->init();
@@ -300,6 +361,7 @@ class WebApplication extends \Shipard\Application
 		{
 			case 'archive':	return $this->archive();
 			case 'cameras':	return $this->camerasImages(TRUE);
+			case 'campicts':return $this->camerasPictures();
 			case 'camera':	return $this->cameraImageNew();
 			case 'imgs':		return $this->cameraImage();
 			case 'print':		return $this->remotePrint();
