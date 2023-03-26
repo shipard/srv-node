@@ -532,8 +532,8 @@ async function doEventOn(topic, payload)
 	{
 		payloadData = {'_payload': payload};
 	}
-	if (payloadData['action_group'] !== undefined)
-		return;
+	//if (payloadData['action_group'] !== undefined)
+	//	return;
 
 	checkStopLoop (topic, payloadData);
 	//console.log ("INCOMING: "+topic+" ---> "+payload);
@@ -566,6 +566,10 @@ async function doEventOn(topic, payload)
 			if (onItem['dataItem'] !== undefined && onItem['dataItem'] in payloadData)
 			{
 				if (payloadData[onItem['dataItem']] == onItem['dataValue'])
+				{
+					runDoEvents(onItem['do'], topic, payloadData);
+				}
+				else if (onItem['dataItem'] === 'action_brightness_delta' && !('action_step_size' in payloadData))
 				{
 					runDoEvents(onItem['do'], topic, payloadData);
 				}
@@ -681,16 +685,9 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				}
 			}
 		}
-		else if (doItemId === 'startLoop')
+		else if (doItemId === 'stepValues')
 		{
-			if (loops[doItem['id']] === undefined)
-			{
-				//console.log("START LOOP: "+doItem['id']);
-				//if (loopCounters[doItem['id']] !== undefined)
-					delete loopCounters[doItem['id']];
-
-				loops[doItem['id']] = doItem;
-			}
+			doStepValues(srcPayload, doItem);
 		}
 	}
 }
@@ -841,6 +838,67 @@ function runEventLoopItem(loop)
 		loopCounters[loop['id']][lpid] = newValue;
 
 		//if (currentValue !== newValue)
+		{
+			let sendData = {};
+			sendData[prop['property']] = newValue;
+			//console.log("SET NEW VALUE ON "+prop['setTopic']+" --> "+prop['property']+" --> FROM: "+currentValue+" TO: "+newValue);
+			//console.log(JSON.stringify(sendData));
+
+			mqttClient.publish (prop['setTopic'], JSON.stringify(sendData), {qos: 0, retain: false}, (error) => {
+				if (error) {
+					console.error(error)
+				}
+			});
+		}
+	}
+}
+
+function doStepValues(srcPayload, loop)
+{
+	for(let lpid in loop['properties'])
+	{
+		let prop = loop['properties'][lpid];
+
+		if (iotEngineInfo[prop['deviceTopic']] === undefined)
+			continue;
+		let deviceInfo = iotEngineInfo[prop['deviceTopic']];
+		if (deviceInfo[prop['property']] === undefined)
+			continue;
+
+		let currentValue = deviceInfo[prop['property']];
+		let newValue = -1;
+
+		if (loop['op'] === '+')
+		{
+			newValue = currentValue + 20;
+			if (newValue > prop['value-max'])
+				newValue = prop['value-max'];
+		}
+		else if (loop['op'] === '-')
+		{
+			newValue = currentValue - 20;
+			if (newValue < prop['value-min'])
+				newValue = prop['value-min'];
+
+			if (newValue === 0)
+				newValue = 5;
+		}
+		else if (loop['op'] === '=>')
+		{
+			let srcSetValue = srcPayload['brightness'];
+			let incToValue = parseInt((srcSetValue / 255) * (prop['value-max'] - prop['value-min']));
+			newValue = prop['value-min'] + incToValue;
+
+			if (newValue < prop['value-min'])
+				newValue = prop['value-min'];
+			if (newValue > prop['value-max'])
+				newValue = prop['value-max'];
+
+			//console.log('TEST-ASSIGN '+newValue/*, srcPayload, prop*/);
+		}
+//		deviceInfo[prop['property']] = newValue;
+
+		if (currentValue !== newValue)
 		{
 			let sendData = {};
 			sendData[prop['property']] = newValue;
