@@ -47,15 +47,13 @@ class Upload extends \Shipard\host\Core
 				continue;
 
 			$sensorCfg = isset($sensors[$sensorData['topic']]) ? $sensors[$sensorData['topic']] : NULL;
-			if (!$sensorCfg || !isset($sensorCfg['id']) || $sensorCfg['id'] === '')
-				continue;
 
 			$shpSensorData = $sensorData;
 			if ($sensorCfg)
 				$shpSensorData['sensorNdx'] = $sensorCfg['ndx'];
 			$shpData['sensorsData'][] = $shpSensorData;
 
-			if (!$sensorCfg)
+			if (!$sensorCfg || !isset($sensorCfg['id']) || $sensorCfg['id'] === '')
 				continue;
 
 			$tsdbData .= $sensorCfg['id'];
