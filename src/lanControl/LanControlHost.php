@@ -87,6 +87,8 @@ class LanControlHost
 			'switch-edgecore' => 'EdgeCore',
 			'switch-passive' => 'Passive',
 			'ap-aruba' => 'Aruba',
+
+			'ad-mikrotik' => 'MikrotikRouter',
 		];
 
 		if (!isset($devicesClasses[$deviceType]))
