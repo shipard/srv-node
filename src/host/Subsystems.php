@@ -527,7 +527,7 @@ class Subsystems extends \Shipard\host\Core
 			file_put_contents($lcSshFN.'.pub_ec', $pubkeyContentEC);
 		}
 
-		$tftpdDir = $this->tftpHomeDir();
+		$tftpdDir = $this->app->tftpHomeDir();
 		if ($tftpdDir)
 		{
 			$this->copyFileWithCheck('shn_ssh_key.pub', $lcSshPath, $tftpdDir);
@@ -553,16 +553,6 @@ class Subsystems extends \Shipard\host\Core
 
 	function checkShipardNodeBoard()
 	{
-	}
-
-	function tftpHomeDir()
-	{
-		if (is_dir('/var/lib/tftpboot'))
-			return '/var/lib/tftpboot';
-		if (is_dir('/srv/tftp'))
-			return '/srv/tftp';
-
-		return FALSE;
 	}
 
 	function copyFileWithCheck ($baseFileName, $srcDir, $dstDir)

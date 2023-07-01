@@ -61,6 +61,16 @@ class Application
 		return FALSE;
 	}
 
+	public function tftpHomeDir()
+	{
+		if (is_dir('/var/lib/tftpboot'))
+			return '/var/lib/tftpboot';
+		if (is_dir('/srv/tftp'))
+			return '/srv/tftp';
+
+		return FALSE;
+	}
+
 	public function apiCall ($url)
 	{
 		$opts = array(

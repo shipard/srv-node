@@ -177,6 +177,9 @@ class FWDownload extends \Shipard\host\Core
 
 		// -- nextion displays
 		$this->download('nextion');
+
+		// -- shp-3rd-fw
+		$this->download3rd();
 	}
 
 	function fwListPartLoad ($partId)
@@ -290,6 +293,121 @@ class FWDownload extends \Shipard\host\Core
 			$cmd = 'mosquitto_pub -t shp/iot-boxes/'.$iotBoxId.'/cmd:fwUpgrade -m "'.$fwItem['fileSize'].' '.$fwItem['fileUrl'].'"';
 			echo $cmd."\n";
 		}
+	}
 
+	public function download3rd($debug = 0)
+	{
+		$urlBegin = 'https://download.shipard.org/shp-3rd-fw/';
+		$newFileListStr = @file_get_contents($urlBegin.'files.json');
+		if (!$newFileListStr)
+		{
+			$this->app->err('ERROR: download `shp-3rd-fw` files failed.');
+			return;
+		}
+		$newFileList = json_decode($newFileListStr, TRUE);
+		if (!$newFileList || !count($newFileList))
+		{
+			$this->app->err('ERROR: `shp-3rd-fw` files list is invalid.');
+			return;
+		}
+
+		$destDir = '/var/lib/shipard-node/fw/shp-3rd-fw/';
+		if (!is_dir($destDir))
+			mkdir($destDir, 0755, TRUE);
+
+		$currentFileList = [];
+		$currentFileListStr = @file_get_contents($destDir.'files.json');
+		if ($currentFileListStr !== FALSE)
+		{
+			$currentFileList = json_decode($currentFileListStr, TRUE);
+			if (!$currentFileList || !is_array($currentFileList) || !count($currentFileList))
+				$currentFileList = [];
+
+			$checkSumCurrent = hash('SHA256', $currentFileListStr);
+			$checkSumNew = hash('SHA256', $newFileListStr);
+			if ($checkSumCurrent === $checkSumNew)
+			{
+				if ($debug)
+					echo "FW `shp-3rd-fw` is up to date\n";
+				return;
+			}
+		}
+
+		$tftpHomeDir = $this->app->tftpHomeDir();
+
+    foreach ($newFileList['fw'] as $folderId => $folderInfo)
+    {
+			if ($debug)
+      	echo "### ".$folderId." ###\n";
+
+      foreach ($folderInfo as $subFolderId => $subFolderInfo)
+      {
+				if ($debug)
+        	echo " * ".$subFolderId." / ".$subFolderInfo['version']."\n";
+        if (isset($subFolderInfo['files']))
+        {
+          foreach ($subFolderInfo['files'] as $fileInfo)
+          {
+            $baseFileName = $fileInfo['fn'];
+
+						$currentFileCheckSum = '';
+						$fileFolder = $destDir.$folderId.'/'.$subFolderId.'/';
+						$fullFileName = $fileFolder.$baseFileName;
+						if (is_readable($fullFileName))
+							$currentFileCheckSum = hash_file('SHA256', $fullFileName);
+
+						if ($debug)
+							echo "   - ".sprintf("%-35s ", $baseFileName);
+
+						$doDownload = 1;
+						if ($currentFileCheckSum === $fileInfo['sha256'])
+						{
+							if ($debug)
+								echo ('UP TO DATE');
+							$doDownload = 1;
+						}
+
+						if ($doDownload)
+						{
+							$fileUrl = $urlBegin.'fw/'.$folderId.'/'.$subFolderId.'/'.$baseFileName;
+							$fileData = file_get_contents($fileUrl);
+							if (!$fileData)
+							{
+								if ($debug)
+									echo (" !!! DOWNLOAD FAILED!!!\n");
+								continue;
+							}
+
+							if (!is_dir($fileFolder))
+								mkdir($fileFolder, 0755, TRUE);
+
+							file_put_contents($fullFileName, $fileData);
+
+							$newFileCheckSum = hash_file('SHA256', $fullFileName);
+							if ($newFileCheckSum !== $fileInfo['sha256'])
+							{
+								if ($debug)
+									echo (" !!! INVALID CHECKSUM!!!\n");
+								unlink($fullFileName);
+								continue;
+							}
+						}
+
+						if ($tftpHomeDir)
+						{
+							if (!is_readable($tftpHomeDir.'/'.$baseFileName))
+							{
+								copy($fullFileName, $tftpHomeDir.'/'.$baseFileName);
+							}
+						}
+
+						if ($debug)
+							echo (" OK - ".$newFileCheckSum."\n");
+          }
+        }
+      }
+    }
+
+		file_put_contents($destDir.'files.json', $newFileListStr);
 	}
 }

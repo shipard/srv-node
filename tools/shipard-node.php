@@ -75,6 +75,14 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	public function fwDownload3rd ()
+	{
+		$debug = intval($this->arg('debug'));
+		$fwd = new \Shipard\host\FWDownload($this);
+		$fwd->download3rd($debug);
+		return TRUE;
+	}
+
 	public function fwList ()
 	{
 		$fwd = new \Shipard\host\FWDownload($this);
@@ -437,6 +445,7 @@ class NodeApp extends \Shipard\Application
 			case	'fw-download':  				return $this->fwDownload();
 			case	'fw-list':  						return $this->fwList();
 			case	'fw-upgrade-iot-boxes': return $this->fwUpgradeIotBoxes();
+			case	'fw-download-3rd':  		return $this->fwDownload3rd();
 
 
 			case	'cameras-scan-archive': return $this->scanArchive();
