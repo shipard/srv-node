@@ -89,6 +89,7 @@ class LanControlHost
 			'ap-aruba' => 'Aruba',
 
 			'ad-mikrotik' => 'MikrotikRouter',
+			'ad-edgecore' => 'EdgeCore',
 		];
 
 		if (!isset($devicesClasses[$deviceType]))
