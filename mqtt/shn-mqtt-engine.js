@@ -141,6 +141,18 @@ function puts(error, stdout, stderr)
 	//console.log(stdout);
 }
 
+function parseJson(stringData)
+{
+	let data = null;
+	try {
+		data = JSON.parse(stringData);
+	}	catch (e) {
+		console.error(e);
+		return null;
+	}
+
+	return data;
+}
 
 let loops = {};
 let stopTopics = {};
@@ -236,7 +248,7 @@ function getInfo (topic)
 function doIbInfo(topic, message)
 {
 	let payload = message.toString().replace(/\\\\"/g, "\\\"");
-	let payloadData = JSON.parse(payload);
+	let payloadData = parseJson(payload);
 
 	if (payloadData == null)
 	{
@@ -309,10 +321,11 @@ function doSetup(topic, payload)
 
 	//console.log ("SETUP: "+setupId+", operation: `"+operation+"`");
 
-	let payloadData = JSON.parse(payload);
+	let payloadData = parseJson(payload);
 	if (operation === 'set')
 	{
-		doSetupSet(setupId, payloadData);
+		if (payloadData)
+			doSetupSet(setupId, payloadData);
 
 		return;
 	}
@@ -413,7 +426,9 @@ function doParam(topic, payload)
 
 function onSensors(topic, payload)
 {
-	let payloadData = JSON.parse(payload);
+	let payloadData = parseJson(payload);
+	if (!payloadData)
+		return;
 	const onSensorsCfg = configuration['onSensors'][topic];
 	if (onSensorsCfg === undefined || onSensorsCfg['dataItems'] === undefined)
 		return;
@@ -460,7 +475,7 @@ function doSensor(topic, payload)
 	let hash = crypto.createHash('md5').update(topic).digest("hex");
 
 	let fileName = '/var/lib/shipard-node/upload/sensors/sensors-'+now+'-'+'-'+hash+'.json';
-
+	//console.log("__SAVE_SD: ", sensorInfoDataStr);
 	fs.writeFileSync(fileName, sensorInfoDataStr, function (err) {
 		if (err)
 			console.log(err);
@@ -485,7 +500,7 @@ function doZigbee (topic, payload)
 	let now = new Date().getTime();
 
 	// -- UPLOAD
-	let payloadData = JSON.parse(payload);
+	let payloadData = parseJson(payload);
 	if (payloadData == null)
 	{
 		console.log("ZIGBEE-LOG parse data ERROR!");
@@ -601,7 +616,15 @@ async function doEventOn(topic, payload)
 
 function doDevice(topic, payload)
 {
-	let payloadData = JSON.parse(payload);
+	let payloadData = null;
+
+	try {
+		payloadData = JSON.parse(payload);
+	} catch (e) {
+		console.error(e);
+		return;
+	}
+
 	if (payloadData['action_group'] !== undefined)
 		return;
 	setInfo(topic, payloadData);
@@ -763,8 +786,8 @@ function doSetupRequest(setupId, setupCfg, requestData)
 		res.on('end', () => {
 			//console.log('Response from ', setupId);
 			//console.log(data);
-			const parsedData = JSON.parse(data);
-			if (parsedData['callActions'] !== undefined)
+			const parsedData = parseJson(data);
+			if (parsedData && parsedData['callActions'] !== undefined)
 			{
 				for(let actionId in parsedData['callActions'])
 				{
