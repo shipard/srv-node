@@ -18,6 +18,7 @@ class Parser extends Utility
 	public function parse()
 	{
 		$rows = preg_split("/\\r\\n|\\r|\\n/", $this->srcScript);
+    $this->srcScriptRows = [];
 
     $firstSubRow = 1;
     $row = '';

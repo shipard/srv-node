@@ -10,6 +10,7 @@ use Shipard\Utility;
 class RTICapsmanServer extends Utility
 {
   var $rtiData = [];
+  var $cmsDevice = 0;
 
 	public function doIt()
 	{
@@ -30,6 +31,7 @@ class RTICapsmanServer extends Utility
       if (!intval($deviceCfg['cfg']['capsmanServer'] ?? 0))
         continue;
 
+      $this->cmsDevice = $deviceNdx;
       //echo json_encode($deviceCfg)."\n\n";
 
 			if ($this->app->debug)
@@ -155,6 +157,8 @@ class RTICapsmanServer extends Utility
       }
     }
 
+    $this->rtiData['rti']['cmsDevice'] = $this->cmsDevice;
+
     if ($this->app->debug)
       echo json_encode($this->rtiData['rti'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n\n";
 
@@ -171,6 +175,16 @@ class RTICapsmanServer extends Utility
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
     socket_sendto($sock, $netDataStrValue, strlen($netDataStrValue), 0, '127.0.0.1', 8125);
     socket_close($sock);
+
+
+    // -- send
+    if (isset($this->rtiData['rti']) && count($this->rtiData['rti']))
+    {
+      $url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-lan-wifi-upload/'.$this->app->serverCfg['serverId'];
+      //echo $url."\n";
+  		$res = $this->app->apiSend($url, $this->rtiData['rti']);
+      //echo json_encode($res)."\n";
+    }
   }
 
   public function searchMacLeases($mac)
