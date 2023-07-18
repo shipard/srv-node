@@ -75,6 +75,15 @@ class RTICapsmanServer extends Utility
 
   protected function createData()
   {
+    // -- reset counters - radios
+    foreach ($this->rtiData['capsman']['radio'] as $radioItem)
+    {
+      $apId = $radioItem['remote-cap-identity'] ?? '';
+      if ($apId === '')
+        continue;
+      $this->rtiData['rti']['cnt']['ap'][$apId] = 0;
+    }
+
     $this->rtiData['rti']['clients'] = [];
     foreach ($this->rtiData['capsman']['rt'] as $rtItem)
     {
@@ -130,10 +139,38 @@ class RTICapsmanServer extends Utility
 
       //echo "\n";
       $this->rtiData['rti']['clients'][] = $item;
+      if (isset($item['ssid']) && $item['ssid'] !== '')
+      {
+        if (isset($this->rtiData['rti']['cnt']['ssid'][$item['ssid']]))
+          $this->rtiData['rti']['cnt']['ssid'][$item['ssid']]++;
+        else
+          $this->rtiData['rti']['cnt']['ssid'][$item['ssid']] = 1;
+      }
+      if (isset($item['apId']) && $item['apId'] !== '')
+      {
+        if (isset($this->rtiData['rti']['cnt']['ap'][$item['apId']]))
+          $this->rtiData['rti']['cnt']['ap'][$item['apId']]++;
+        else
+          $this->rtiData['rti']['cnt']['ap'][$item['apId']] = 1;
+      }
     }
 
     if ($this->app->debug)
-      echo json_encode($this->rtiData['rti']['clients'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n\n";
+      echo json_encode($this->rtiData['rti'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n\n";
+
+    // -- statsd --> netdata
+    $netDataStrValue = '';
+    foreach ($this->rtiData['rti']['cnt'] as $cntClass => $cntClassInfo)
+    {
+      foreach ($cntClassInfo as $ciId => $ci)
+      {
+        $netDataStrValue .= 'capsman.'.$cntClass.'.'.$ciId.': '.$ci.'|g|#name='.$cntClass.'usersCount'."\n";
+      }
+    }
+    //echo $netDataStrValue;
+    $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+    socket_sendto($sock, $netDataStrValue, strlen($netDataStrValue), 0, '127.0.0.1', 8125);
+    socket_close($sock);
   }
 
   public function searchMacLeases($mac)
