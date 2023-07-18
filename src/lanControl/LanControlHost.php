@@ -146,7 +146,7 @@ class LanControlHost
 
 			if (!isset($deviceCfg['macDeviceType']))
 				continue;
-			if (substr($deviceCfg['macDeviceType'], 0, 6) !== 'switch' && substr($deviceCfg['macDeviceType'], 0, 6) !== 'router')
+			if (substr($deviceCfg['macDeviceType'], 0, 6) !== 'switch' && substr($deviceCfg['macDeviceType'], 0, 6) !== 'router' && substr($deviceCfg['macDeviceType'], 0, 3) !== 'ad-')
 				continue;
 
 			if ($this->app->debug)

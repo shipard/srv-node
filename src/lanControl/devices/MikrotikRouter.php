@@ -29,6 +29,10 @@ class MikrotikRouter extends \Shipard\lanControl\devices\LanControlDeviceCore
 			case 'getRunningConfig': $cmd .= ' "export terse;ip neighbor export terse verbose;tool export terse verbose;ip upnp export terse verbose;ip socks export terse verbose;ip cloud export terse verbose"'; break;
 			case 'runScript': $cmd .= ' -T <'.$this->cmdScriptFileName; break;
 			case 'getDeviceInfo': $cmd .= ' "/system resource print; /system routerboard print"'; break;
+			case 'getCapsmanServerRegistrationTable': $cmd .= ' "/caps-man/registration-table/print stats without-paging"'; break;
+			case 'getCapsmanServerRadio': $cmd .= ' "/caps-man/radio/print detail without-paging"'; break;
+			case 'getCapsmanInterfaces': $cmd .= ' "/caps-man/interface/print detail without-paging"'; break;
+			case 'getDHCPLeases': $cmd .= ' "/ip/dhcp-server/lease/print without-paging detail"'; break;
 		}
 
 		$cmd .= ' >'.$this->cmdResultFileName;

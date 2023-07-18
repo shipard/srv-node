@@ -334,6 +334,14 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	function rtiCapsmanServer()
+	{
+		$hm = new Shipard\lanControl\devices\mikrotik\RTICapsmanServer($this);
+		$hm->run();
+
+		return TRUE;
+	}
+
 	protected function bkpSrvDownload()
 	{
 		$server = $this->arg('server');
@@ -461,6 +469,8 @@ class NodeApp extends \Shipard\Application
 			case	'lan-monitoring-get-dashboards':	return $this->lanMonitoringGetDashboards();
 			case	'lan-monitoring-get-snmp-cfg':		return $this->lanMonitoringGetSnmpCfg();
 			case	'lan-monitoring-macs':	return $this->lanMonitoringMacs();
+
+			case	'rti-capsman-server':		return $this->rtiCapsmanServer();
 
 			case	'iot-box-info':					return $this->iotBoxInfo();
 
