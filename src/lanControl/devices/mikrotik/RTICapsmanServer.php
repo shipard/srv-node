@@ -98,14 +98,32 @@ class RTICapsmanServer extends Utility
         'cch' => '',
         'txRate' => $rtItem['tx-rate'] ?? '',
         'rxRate' => $rtItem['rx-rate'] ?? '',
+        'txBytes' => 0,
+        'rxBytes' => 0,
+        'uptime' => 0,
       ];
 
-      //echo $rtItem['mac-address']."; ".$rtItem['ssid']."; rssi: ".intval($rtItem['rx-signal'])."; ";
+      if (isset($rtItem['bytes']))
+      {
+        $bytesParts = explode(',', $rtItem['bytes']);
+        if (count($bytesParts) === 2)
+        {
+          $item['txBytes'] = intval($bytesParts[0]);
+          $item['rxBytes'] = intval($bytesParts[1]);
+        }
+      }
 
+      if (isset($rtItem['uptime']))
+      {
+        $item['uptime'] = $this->uptimeInSeconds($rtItem['uptime']);
+      }
 
       $leases = $this->searchMacLeases($rtItem['mac-address']);
       if (isset($leases[0]['host-name']))
         $item['hostName'] = $leases[0]['host-name'];
+      if (isset($leases[0]['active-address']))
+        $item['aip'] = $leases[0]['active-address'];
+
       //echo count($leases).' '.$leases[0]['host-name'].'; ';
 
       //echo "<".$rtItem['interface']."> ";
@@ -231,6 +249,35 @@ class RTICapsmanServer extends Utility
     return NULL;
   }
 
+  function uptimeInSeconds ($uptime)
+  {
+    $mark1 = strpos($uptime, "w");
+    $weeks = intval(substr($uptime, 0, $mark1));
+    if ($mark1)
+      $uptime = substr($uptime, $mark1 + 1);
+
+    $mark1 = strpos($uptime, "d");
+    $days = intval(substr($uptime, 0, $mark1));
+    if ($mark1)
+      $uptime=substr($uptime, $mark1 + 1);
+
+    $mark1 = strpos($uptime, "h");
+    $hours = intval(substr($uptime, 0, $mark1));
+    if ($mark1)
+      $uptime = substr($uptime, $mark1 + 1);
+
+    $mark1 = strpos($uptime, "m");
+    $minutes = intval(substr($uptime, 0, $mark1));
+    if ($mark1)
+      $uptime = substr($uptime, $mark1 + 1);
+    $mark1 = strpos($uptime, "s");
+    $seconds = intval(substr($uptime, 0, $mark1));
+    if ($mark1)
+      $uptime = substr($uptime, $mark1 + 1);
+    $total= ($weeks * 604800) + ($days * 86400) + ($hours * 3600) + ($minutes * 60) + $seconds;
+
+    return $total;
+  }
 
   public function run()
   {
