@@ -191,6 +191,9 @@ class FWDownload extends \Shipard\host\Core
 		if (!$channels)
 			return NULL;
 
+		if (intval($this->app->serverCfg['useLocalIBFW'] ?? 0) && $partId === 'ib')
+			$channels[] = 'local';
+
 		foreach ($channels as $channelId)
 		{
 			$projects = $this->app->loadCfgFile($partDir.'/'.$channelId.'/projects.json');
@@ -217,7 +220,6 @@ class FWDownload extends \Shipard\host\Core
 		return $list;
 	}
 
-
 	function fwListPart ($partId)
 	{
 		$partDir = $this->localDir.'/'.$partId;
@@ -225,7 +227,8 @@ class FWDownload extends \Shipard\host\Core
 		if (!$channels)
 			return $this->app->err('File `$partDir/channels.json` not exist');
 
-		echo '### '.$partId." ###\n";
+		if (intval($this->app->serverCfg['useLocalIBFW'] ?? 0) && $partId === 'ib')
+			$channels[] = 'local';
 
 		foreach ($channels as $channelId)
 		{
@@ -265,17 +268,17 @@ class FWDownload extends \Shipard\host\Core
 			return;
 		}
 
-		$channelId = 'stable';
+		$channelId = $this->app->serverCfg['ibfwChannel'] ?? 'stable';
 
 		$fwList = $this->fwListPartLoad ('ib');
 
-		print_r($fwList);
+		//print_r($fwList);
 		$iotBoxes = $this->app->loadCfgFile('/etc/shipard-node/iot-boxes.json');
 		foreach ($iotBoxes as $iotBoxNdx => $iotBoxCfg)
 		{
 			$iotBoxId = $iotBoxCfg['cfg']['deviceId'];
 			$fwId = $iotBoxCfg['cfg']['fwId'] ?? NULL;
-
+			//echo "FWID: $fwId \n";
 			if (!$fwId)
 			{
 
