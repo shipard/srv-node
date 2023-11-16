@@ -419,7 +419,7 @@ class NodeApp extends \Shipard\Application
 	{
 		if ($this->versionInfo['version'] === '0.0')
 		{
-			$pkg = $this->loadCfgFile('/usr/lib/shipard-node/package.json');
+			$pkg = $this->loadCfgFile('/usr/lib/shipard-node/shipard-version.json');
 			if ($pkg)
 			{
 				echo "devel ".$pkg['version']."\n";
