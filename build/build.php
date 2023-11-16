@@ -98,9 +98,9 @@ class ShpdBuildApp
 
 		$live = $this->arg('live');
 
-		$pkg = $this->loadCfgFile('package.json');
+		$pkg = $this->loadCfgFile('shipard-version.json');
 		if (!$pkg)
-			return $this->err("File package.json not found.");
+			return $this->err("File shipard-version.json not found.");
 
 		$channel = ($live) ? 'live' : 'devel';
 		$commit = shell_exec("git log --pretty=format:'%h' -n 1");
