@@ -67,6 +67,8 @@ class Upload extends \Shipard\host\Core
 
 			if ($sensorData['value'] === '' || $sensorData['value'] === 'nan' || $sensorData['value'] === false)
 				$sensorData['value'] = 0;
+			elseif ($sensorData['value'] === true)
+				$sensorData['value'] = 1;
 
 			if (is_string($sensorData['value']))
 				$sensorData['value'] = floatval($sensorData['value']);
