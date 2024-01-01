@@ -24,7 +24,7 @@ function versionToInt() {
 #
 if [ "$NAME" = "Ubuntu" ]; then
     currentVersion=$(versionToInt $VERSION_ID)
-    min81Version=$(versionToInt 22.04.0)
+    min81Version=$(versionToInt 24.04.0)
 
     add-apt-repository --yes ppa:ondrej/php
     apt --assume-yes --quiet update
@@ -35,13 +35,13 @@ else
     apt --assume-yes --quiet update
 fi
 
-apt install --assume-yes --quiet php8.2-cli php8.2-curl php8.2-intl php8.2-zip php8.2-bcmath php8.2-mbstring php8.2-snmp php8.2-inotify
+apt install --assume-yes --quiet php8.3-cli php8.3-curl php8.3-intl php8.3-zip php8.3-bcmath php8.3-mbstring php8.3-snmp php8.3-inotify
 
 #####
 
 apt install --assume-yes --quiet net-tools fping mosquitto-clients
 
 ### redis
-apt install --assume-yes --quiet redis php8.2-redis
+apt install --assume-yes --quiet redis php8.3-redis
 
 

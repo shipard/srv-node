@@ -13,6 +13,7 @@ class Subsystems extends \Shipard\host\Core
 	{
 		$needRestart = 0;//$this->checkCerts();
 
+		$this->checkPhp();
 		$this->checkExpect();
 		$this->checkFtpDaemon();
 		$this->checkFfmpeg();
@@ -37,6 +38,15 @@ class Subsystems extends \Shipard\host\Core
 
 			if ($this->needMqttServer())
 				$this->restartHostService('mosquitto');
+		}
+	}
+
+	function checkPhp()
+	{
+		if (!is_dir ('/etc/php/8.3'))
+		{
+			$installCmd = "apt install --assume-yes --quiet php8.3-cli php8.3-curl php8.3-intl php8.3-zip php8.3-bcmath php8.3-mbstring php8.3-snmp php8.3-inotify php8.3-redis";
+			passthru($installCmd);
 		}
 	}
 
@@ -412,60 +422,38 @@ class Subsystems extends \Shipard\host\Core
 
 	function checkPhpFpm ()
 	{
-		if (!is_dir('/var/run/php/') && !is_dir('/run/php/'))
+		if ((!is_dir('/var/run/php/') && !is_dir('/run/php/')) || !is_dir ('/etc/php/8.3/fpm'))
 		{
-			$installCmd = "apt-get --assume-yes --quiet install php8.2-fpm";
+			$installCmd = "apt-get --assume-yes --quiet install php8.3-fpm";
 			passthru($installCmd);
 		}
 
 		$needRestart = FALSE;
-		// -- php-fpm
-		if (is_dir ('/etc/php/8.1'))
+		if (is_dir ('/etc/php/8.3'))
 		{
-			$fn = '/etc/php/8.1/fpm/pool.d/zz-shpd-php-fpm.conf';
+			$fn = '/etc/php/8.3/fpm/pool.d/zz-shpd-php-fpm.conf';
 			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/zz-shpd-php-fpm.conf', $fn);
 				$needRestart = TRUE;
 			}
-			$fn = '/etc/php/8.1/fpm/conf.d/95-shpd-php.ini';
+			$fn = '/etc/php/8.3/fpm/conf.d/95-shpd-php.ini';
 			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
 				$needRestart = TRUE;
 			}
-			$fn = '/etc/php/8.1/cli/conf.d/95-shpd-php.ini';
+			$fn = '/etc/php/8.3/cli/conf.d/95-shpd-php.ini';
 			if (!is_file($fn))
 			{
 				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
 			}
 
 			if ($needRestart)
-				$this->restartHostService('php8.1-fpm', 'reload');
-		}
-
-		if (is_dir ('/etc/php/8.2'))
-		{
-			$fn = '/etc/php/8.2/fpm/pool.d/zz-shpd-php-fpm.conf';
-			if (!is_file($fn))
 			{
-				symlink('/usr/lib/shipard-node/etc/php/zz-shpd-php-fpm.conf', $fn);
-				$needRestart = TRUE;
+				$this->restartHostService('php8.3-fpm', 'reload');
+				$this->restartHostService('nginx', 'restart');
 			}
-			$fn = '/etc/php/8.2/fpm/conf.d/95-shpd-php.ini';
-			if (!is_file($fn))
-			{
-				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
-				$needRestart = TRUE;
-			}
-			$fn = '/etc/php/8.2/cli/conf.d/95-shpd-php.ini';
-			if (!is_file($fn))
-			{
-				symlink('/usr/lib/shipard-node/etc/php/95-shpd-php.ini', $fn);
-			}
-
-			if ($needRestart)
-				$this->restartHostService('php8.2-fpm', 'reload');
 		}
 	}
 
