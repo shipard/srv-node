@@ -334,6 +334,13 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	function esignsImages()
+	{
+		$eng = new \Shipard\esigns\ESignManager($this);
+		$eng->run();
+		return TRUE;
+	}
+
 	function rtiCapsmanServer()
 	{
 		$hm = new Shipard\lanControl\devices\mikrotik\RTICapsmanServer($this);
@@ -482,6 +489,8 @@ class NodeApp extends \Shipard\Application
 
 			case	'netdata-alarm':				return $this->netDataAlarm();
 			case	'netdata-alarms-api-on':	return $this->netDataAlarmsApiOn();
+
+			case	'esigns-images':				return $this->esignsImages();
 
 			case	'version':							return $this->version();
 		}

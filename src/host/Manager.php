@@ -106,6 +106,15 @@ class Manager extends \Shipard\host\Core
 		else
 			@unlink('/etc/shipard-node/iot-sensors.json');
 
+		// -- esigns
+		if (isset($cfg['cfg']['cfg']['esigns']) && count($cfg['cfg']['cfg']['esigns']))
+		{
+			file_put_contents('/etc/shipard-node/esigns.json', json_encode($cfg['cfg']['cfg']['esigns'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+			unset($cfg['cfg']['cfg']['esigns']);
+		}
+		else
+			@unlink('/etc/shipard-node/esigns.json');
+
 		file_put_contents('/etc/shipard-node/config.json', json_encode($cfg['cfg'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
 		$this->restartHostServices($restartServices);
