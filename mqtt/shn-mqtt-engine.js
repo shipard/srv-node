@@ -156,6 +156,7 @@ function parseJson(stringData)
 
 let loops = {};
 let stopTopics = {};
+let delayedQueue = [];
 
 function eventLoop()
 {
@@ -168,7 +169,34 @@ function eventLoop()
 		runEventLoopItem(loop);
 	}
 
+	checkDealyedQueue();
+
 	setTimeout (function () {eventLoop()}, 100);
+}
+
+function addDelayedQueueItem(delay, mqttTopic, mqttPayload)
+{
+	const now = Date.now();
+	delayedQueue.push({startAfter: delay + now, topic: mqttTopic, payload: mqttPayload});
+}
+
+function checkDealyedQueue()
+{
+	const now = Date.now();
+	for(let diid in delayedQueue)
+	{
+		let dqItem = delayedQueue[diid];
+		if (dqItem.startAfter > now)
+			continue;
+		mqttClient.publish (dqItem.topic, dqItem.payload, {qos: 0, retain: false}, (error) => {
+			if (error)
+			{
+				console.error(error)
+			}
+		});
+		delayedQueue.splice(diid, 1);
+		return;
+	}
 }
 
 
@@ -651,6 +679,11 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 						const dataItem = pp[ppId];
 						if (dataItem['when'] !== undefined && !checkWhen(dataItem['when']))
 							continue;
+						if (dataItem['startDelay'] !== undefined)
+						{
+							addDelayedQueueItem(dataItem['startDelay'], doPropertyItemId, dataItem['value']);
+							continue;
+						}
 						payload[ppId] = dataItem['value'];
 					}
 					payload = JSON.stringify(payload);
