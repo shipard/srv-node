@@ -674,14 +674,18 @@ function runDoEvents(doEvents, srcTopic, srcPayload)
 				{
 					payload = {};
 					const pp = doPropertiesItem['data'];
-					for(let ppId in pp)
+					for(let xppId in pp)
 					{
-						const dataItem = pp[ppId];
+						const dataItem = pp[xppId];
+						let ppidParts = xppId.split(':');
+						let ppId = ppidParts[0];
 						if (dataItem['when'] !== undefined && !checkWhen(dataItem['when']))
 							continue;
 						if (dataItem['startDelay'] !== undefined)
 						{
-							addDelayedQueueItem(dataItem['startDelay'], doPropertyItemId, dataItem['value']);
+							delayedPaload = {};
+							delayedPaload[ppId] = dataItem['value'];
+							addDelayedQueueItem(dataItem['startDelay'], doPropertyItemId, JSON.stringify(delayedPaload));
 							continue;
 						}
 						payload[ppId] = dataItem['value'];
