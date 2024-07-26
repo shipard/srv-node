@@ -10,6 +10,11 @@ class WebApplication extends \Shipard\Application
 	var $requestPath;
 	var $command;
 
+	var $cmd = '';
+	var $authToken = '';
+
+	var $nodeTokens = NULL;
+
 	protected function parseUrl ()
 	{
 		// -- parse url for routing
@@ -41,6 +46,13 @@ class WebApplication extends \Shipard\Application
 	{
 		$this->parseUrl();
 		$this->command = $this->requestPath[0];
+
+		$this->authToken = $this->requestPath[0] ?? '';
+		$this->cmd = $this->requestPath[1] ?? '';
+
+		$this->nodeTokens = $this->loadCfgFile('/etc/shipard-node/node-tokens.json');
+		if (!$this->nodeTokens)
+			$this->nodeTokens = [];
 	}
 
 	protected function error ($status, $msg)
@@ -88,6 +100,14 @@ class WebApplication extends \Shipard\Application
 	{
 		//header ('X-Frame-Options: SAMEORIGIN');
 		header ("Content-type: " . 'text/html');
+		header ("HTTP/1.1 200 OK");
+
+		echo $text;
+	}
+
+	public function sendText ($text)
+	{
+		header ("Content-type: " . 'text/plain');
 		header ("HTTP/1.1 200 OK");
 
 		echo $text;
@@ -273,6 +293,27 @@ class WebApplication extends \Shipard\Application
 		return $this->sendJson(json_encode($result));
 	}
 
+	public function lcSSH ()
+	{
+		$fileName = $this->requestPath(2);
+		if ($fileName === '' || !str_ends_with($fileName, '.pub'))
+			return $this->error(404, 'Not found...');
+
+		$tftpHomeDir = $this->tftpHomeDir();
+		if ($tftpHomeDir === FALSE)
+			return $this->error(404, 'Not found...');
+
+		$ffn = $tftpHomeDir.'/'.$fileName;
+		if (!is_readable($ffn))
+			return $this->error(404, 'Not found...');
+
+		$fileData = file_get_contents($ffn);
+
+		$this->sendText($fileData);
+
+		return TRUE;
+	}
+
 	public function rg ()
 	{
 		$rg = new \Shipard\rg\RackGuard($this);
@@ -369,6 +410,14 @@ class WebApplication extends \Shipard\Application
 			case 'lans':		return $this->lans();
 			case 'control':	return $this->control();
 			case 'rg':			return $this->rg();
+		}
+
+		if (!in_array($this->authToken, $this->nodeTokens))
+			return $this->error(404, 'Not found!!!');
+
+		switch ($this->cmd)
+		{
+			case 'lc-ssh':	return $this->lcSSH();
 		}
 
 		$this->error(404, 'Not found!');
