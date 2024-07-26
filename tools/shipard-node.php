@@ -26,6 +26,15 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	public function getNodeTokensFromServer ()
+	{
+		$hm = new \Shipard\host\Manager($this);
+		if (!$hm->getNodeTokensFromServer())
+			return $this->err ('ERROR!');
+
+		return TRUE;
+	}
+
 	public function cfgInstallCerts()
 	{
 		$cm = new \Shipard\host\CertsManager($this);
@@ -445,6 +454,7 @@ class NodeApp extends \Shipard\Application
 		{
 			case	'cfg-init':     				return $this->cfgInit();
 			case	'cfg-get':     					return $this->getCfgFromServer();
+			case	'cfg-get-node-tokens':  return $this->getNodeTokensFromServer();
 			case	'cfg-install-certs':    return $this->cfgInstallCerts();
 			case	'cfg-reset-scripts':   	return $this->resetScripts();
 

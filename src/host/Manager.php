@@ -106,6 +106,27 @@ class Manager extends \Shipard\host\Core
 		else
 			@unlink('/etc/shipard-node/iot-sensors.json');
 
+		// -- get lan devices init scripts
+		if (isset($cfg['cfg']['cfg']['lanControlDevices']))
+		{
+			$dstDir = '/var/lib/shipard-node/lc/init-scripts';
+			if (!is_dir($dstDir))
+				mkdir($dstDir, 0750, TRUE);
+
+			foreach ($cfg['cfg']['cfg']['lanControlDevices'] as $deviceNdx => $deviceCfg)
+			{
+				if ($deviceCfg['macDeviceType'] !== 'ad-mikrotik')
+					continue;
+				$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-lan-device-init-script/'.$deviceNdx;
+				$res = $this->app->apiSend($url, []);
+				if (isset($res['initScript']))
+				{
+					$fn = $dstDir.'/'.'init-'.$deviceNdx.'.rsc';
+					file_put_contents($fn, $res['initScript']);
+				}
+			}
+		}
+
 		// -- esigns
 		if (isset($cfg['cfg']['cfg']['esigns']) && count($cfg['cfg']['cfg']['esigns']))
 		{
@@ -118,6 +139,24 @@ class Manager extends \Shipard\host\Core
 		file_put_contents('/etc/shipard-node/config.json', json_encode($cfg['cfg'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
 		$this->restartHostServices($restartServices);
+
+		return TRUE;
+	}
+
+	public function getNodeTokensFromServer ()
+	{
+		$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-lan-auth-tokens/'.$this->app->serverCfg['serverId'];
+		$cfg = $this->app->apiCall($url);
+
+		if (!$cfg || !$cfg['success'])
+			return FALSE;
+
+		$tokensTxt = json_encode($cfg['tokens']);
+		$newVer =	sha1($tokensTxt);
+		$existedVer = is_readable('/etc/shipard-node/node-tokens.json') ? sha1_file('/etc/shipard-node/node-tokens.json') : '!';
+
+		if ($newVer !== $existedVer)
+			file_put_contents('/etc/shipard-node/node-tokens.json', $tokensTxt);
 
 		return TRUE;
 	}

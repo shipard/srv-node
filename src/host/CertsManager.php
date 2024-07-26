@@ -17,6 +17,10 @@ class CertsManager extends \Shipard\host\Core
 		$this->check();
 
 		$url = $this->app->serverCfg['dsUrl'].'/api/objects/call/mac-get-node-server-certs/'.$this->app->serverCfg['serverId'];
+
+		if ($this->app->debug)
+			echo ("* API CALL `$url`\n");
+
 		$cfg = $this->app->apiCall($url);
 
 		$this->installCertificates($cfg['certificates']);
@@ -37,7 +41,7 @@ class CertsManager extends \Shipard\host\Core
 		if (!count($certs))
 			return;
 
-		$needRestart = 0;	
+		$needRestart = 0;
 		foreach ($certs as $certName => $cert)
 		{
 			$certPath = $this->certsBasePath.$certName.'/';
@@ -45,6 +49,8 @@ class CertsManager extends \Shipard\host\Core
 			{
 				mkdir($certPath, 0755);
 			}
+
+			file_put_contents($certPath.'crt.info', json_encode($cert, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
 
 			foreach ($cert['files'] as $fileName => $fileContent)
 			{
@@ -56,14 +62,14 @@ class CertsManager extends \Shipard\host\Core
 
 				if ($oldFileCheckSum !== $newFileCheckSum)
 					$needRestart++;
-				
+
 				file_put_contents($certPath.$fileName, $fileContent);
 			}
 		}
 
 		if ($needRestart)
 		{
-			if (is_dir('/etc/nginx'))	
+			if (is_dir('/etc/nginx'))
 				$this->restartHostService('nginx', 'reload');
 
 			if (is_dir('/etc/mosquitto'))
