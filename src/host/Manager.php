@@ -374,12 +374,22 @@ class Manager extends \Shipard\host\Core
 
 	public function upgrade ()
 	{
+		$generation = $this->app->generation;
+		$genParam = intval($this->app->arg('generation'));
+		if ($genParam === ($this->app->generation + 1))
+			$generation = $genParam;
+		else
+		{
+			error_log('Upgrade to generation `'.$genParam.'` is not possible');
+			return;
+		}
+
 		$channel = 'devel';
 		if (isset($this->app->serverCfg['channel']))
 			$channel = $this->app->serverCfg['channel'];
 
 		// new
-		$nodePkgInfoFileName = 'https://download.shipard.org/shipard-node/server-app-2/shipard-node-'.$channel.'.info';
+		$nodePkgInfoFileName = 'https://download.shipard.org/shipard-node/server-app-'.$generation.'/shipard-node-'.$channel.'.info';
 		$nodePkgInfo = json_decode(file_get_contents($nodePkgInfoFileName), TRUE);
 		if (!$nodePkgInfo)
 			return;
@@ -397,7 +407,7 @@ class Manager extends \Shipard\host\Core
 		if (!$doUpgrade)
 			return;
 
-		$nodePkgArchiveSrcFileName = 'https://download.shipard.org/shipard-node/server-app-2/'.$nodePkgInfo['fileName'];
+		$nodePkgArchiveSrcFileName = 'https://download.shipard.org/shipard-node/server-app-'.$generation.'/'.$nodePkgInfo['fileName'];
 		$nodePkgArchiveFileName = $nodePkgInfo['fileName'];
 
 		$res = copy ($nodePkgArchiveSrcFileName, $nodePkgArchiveFileName);

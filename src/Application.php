@@ -15,6 +15,7 @@ class Application
 	var $versionInfo = FALSE;
 
 	var $debug = 0;
+	var $generation = 2;
 
 	var $camsDir = '';
 	var $picturesDir = '';
