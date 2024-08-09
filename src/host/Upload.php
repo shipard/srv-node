@@ -90,6 +90,7 @@ class Upload extends \Shipard\host\Core
 		//echo "API-SEND `$url`: ".json_encode($result)."\n";
 
 		// -- influxDb
+		/*
 		if ($iotDataSource !== NULL && $tsdbData !== '')
 		{
 			$url = $iotDataSource['url'].'api/v2/write';
@@ -116,6 +117,7 @@ class Upload extends \Shipard\host\Core
 				return;
 			}
 		}
+		*/
 
 		foreach ($files as $fileName)
 		{
