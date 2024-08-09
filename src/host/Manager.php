@@ -376,12 +376,15 @@ class Manager extends \Shipard\host\Core
 	{
 		$generation = $this->app->generation;
 		$genParam = intval($this->app->arg('generation'));
-		if ($genParam === ($this->app->generation + 1))
-			$generation = $genParam;
-		else
+		if ($genParam)
 		{
-			error_log('Upgrade to generation `'.$genParam.'` is not possible');
-			return;
+			if ($genParam === ($this->app->generation + 1))
+				$generation = $genParam;
+			else
+			{
+				error_log('Upgrade to generation `'.$genParam.'` is not possible');
+				return;
+			}
 		}
 
 		$channel = 'devel';
