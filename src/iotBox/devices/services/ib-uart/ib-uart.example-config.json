@@ -1,6 +1,7 @@
 {
   "serialPort": "/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_Controller_3e9a...c348-if00-port0",
   "mqttHost": "mqtt.host.name",
-  "mqttPort": 8883,
+  "mqttPort": 1883,
+  "mqttUseTLS": 0,
   "mqttTopic": "shp/iot-boxes/DEVICE-ID/"
 }

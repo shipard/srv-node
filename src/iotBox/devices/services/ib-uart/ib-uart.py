@@ -17,11 +17,13 @@ def mqtt_on_connect(client, userdata, flags, rc):
 	client.subscribe(config["mqttTopic"] + "#")
 
 def setupMqtt():
+	global config
 	global mqttClient
 	mqttClient = mqtt.Client()
 	mqttClient.on_connect = mqtt_on_connect
 	mqttClient.on_message = onMessage
-	#mqttClient.tls_set()
+	if (config['mqttUseTLS']):
+		mqttClient.tls_set()
 	mqttClient.connect(config['mqttHost'], config['mqttPort'], 60)
 	mqttClient.loop_start()
 

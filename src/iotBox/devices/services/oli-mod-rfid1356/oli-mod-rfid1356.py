@@ -14,10 +14,12 @@ def mqtt_on_connect(client, userdata, flags, rc):
 	print("==================>>>>>> MQTT Connected with result code "+str(rc))
 
 def setupMqtt():
+	global config
 	global mqttClient
 	mqttClient = mqtt.Client()
 	mqttClient.on_connect = mqtt_on_connect
-	mqttClient.tls_set()
+	if (config['mqttUseTLS']):
+		mqttClient.tls_set()
 	mqttClient.connect(config['mqttHost'], config['mqttPort'], 60)
 	mqttClient.loop_start()
 
@@ -54,16 +56,17 @@ def readingLoop ():
 			counter = 0
 		if (read_chars == last_value):
 			continue
-		last_value = read_chars	
+		last_value = read_chars
 		#print (read_chars[1:-1])
 		rfidValue = read_chars[1:-2]
 		if (1):
 			rfidValue = "".join(reversed([rfidValue[i:i+2] for i in range(0, len(rfidValue), 2)]))
 		print(rfidValue)
-		#mqttClient.publish(config['mqttTopic'], rfidValue)
-		keyboard.write(rfidValue, exact = True)
-		keyboard.send("enter")
-
+		if (config['mqttMode']):
+			mqttClient.publish(config['mqttTopic'], rfidValue)
+		if (config['keyboardMode']):
+			keyboard.write(rfidValue, exact = True)
+			keyboard.send("enter")
 
 def main():
 	global config
@@ -71,8 +74,9 @@ def main():
 	if (config == None):
 		print("No config found")
 		return
-	setupMqtt()
-	setupSerial()	
+	if (config['mqttMode']):
+		setupMqtt()
+	setupSerial()
 	readingLoop()
 
 if __name__ == '__main__':
