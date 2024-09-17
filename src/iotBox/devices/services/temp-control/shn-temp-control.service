@@ -1,0 +1,14 @@
+[Unit]
+Description=shn-temp-control-device
+After=network.target auditd.service e10-node-wss.service shn-exts-socat-serial.service
+
+[Service]
+PIDFile=/run/shn-temp-control.pid
+ExecStart=/usr/lib/shipard-node/src/iotBox/devices/services/temp-control/shn-temp-control.sh
+Type=forking
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,13 @@
+{
+  "mqttHost": "mqtt.host.name",
+  "mqttPort": 1883,
+  "mqttUseTLS": 0,
+  "mqttDeviceTopic": "shp/iot-boxes/DEVICE-ID",
+
+  "tempSensorTopic": "shp/sensors/temperature/VM1/28d6...13c11",
+  "relCoolerTopic": "shp/iot-boxes/DEVICE-ID/REL-COOLER",
+  "relFanTopic": "shp/iot-boxes/DEVICE-ID/REL-FAN",
+
+  "tempOn": 10,
+  "tempOff": 8
+}
