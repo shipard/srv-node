@@ -5,7 +5,7 @@ After=network.target auditd.service
 [Service]
 User=shpd
 Group=shpd
-PIDFile=/run/shn-incus-sync.pid
+PIDFile=/var/lib/shipard-node/run/shn-incus-sync.pid
 ExecStart=/usr/lib/shipard-node/tools/shn-incus-sync.sh
 Type=forking
 Restart=on-failure
