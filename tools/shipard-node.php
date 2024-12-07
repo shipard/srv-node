@@ -410,6 +410,17 @@ class NodeApp extends \Shipard\Application
 		return TRUE;
 	}
 
+	protected function incusSync()
+	{
+		$eng = new \Shipard\incus\IncusSync($this);
+
+		if (!$eng->init())
+			return FALSE;
+
+		$eng->syncAll();
+		return TRUE;
+	}
+
 	function sendUserAgentInfo($deviceNdx, $agentInfo)
 	{
 		$now = new \DateTime();
@@ -496,6 +507,7 @@ class NodeApp extends \Shipard\Application
 			case	'bkpsrv-repair-atts':		return $this->bkpSrvRepairAtts();
 
 			case	'bkpvms-backup':				return $this->bkpVMSBackup();
+			case	'incus-sync':						return $this->incusSync();
 
 			case	'netdata-alarm':				return $this->netDataAlarm();
 			case	'netdata-alarms-api-on':	return $this->netDataAlarmsApiOn();
