@@ -337,6 +337,7 @@ class NodeApp extends \Shipard\Application
 
 	function iotBoxInfo()
 	{
+		// @TODO: delete!
 		$fileName = $this->arg('file');
 		$eng = new \Shipard\lanControl\devices\ShpIoTBox($this);
 		$eng->sendSystemInfo($fileName);

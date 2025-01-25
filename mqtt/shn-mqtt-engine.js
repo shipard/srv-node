@@ -122,7 +122,7 @@ mqttClient.on('connect', function() {
 		if (topicCfg !== undefined)
 		{
 			if (topicCfg['type'] === 'device')
-				doDevice(topic, message.toString());
+				doDevice(topicCfg['ndx'], topic, message.toString());
 
 			if (configuration['onSensors'] !== undefined && topic in configuration['onSensors'])
 				onSensors(topic, message.toString());
@@ -286,26 +286,25 @@ function doIbInfo(topic, message)
 
 	if (payloadData['type'] === 'system')
 	{
-		let ibInfoData = {
-			'type': 'e10-nl-snmp',
-			'data': {
-				'type': payloadData['type'],
-				'device': payloadData['device'],
-				'datetime': new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''),
-				'checksum': '',
-				'items': payloadData['items']
-			}
-		};
+		var devNdx = payloadData['devNdx'] ?? 0;
+		if (!devNdx)
+			devNdx = payloadData['device'] ?? 0; // historic firmware
+		let ibInfoData = payloadData;
+		ibInfoData['infoType'] = 'shn-ib-info';
+		ibInfoData['devNdx'] = devNdx;
+		ibInfoData['datetime'] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
 		let ibDataStr = JSON.stringify(ibInfoData);
 
 		let now = new Date().getTime();
-		let fileName = '/var/lib/shipard-node/upload/lan/iot-box-'+payloadData['device']+'-'+payloadData['type']+'-'+now+'.json';
+		let fileName = '/var/lib/shipard-node/upload/lan/iot-box-'+ibInfoData['devNdx']+'-'+ibInfoData['devId']+'-'+now+'_'+Math.random()+'.json';
 
 		fs.writeFileSync(fileName, ibDataStr, function (err) {
 			if (err)
 				console.log(err);
 		});
 
+		/*
 		let iotBoxInfoDataStr = JSON.stringify(payloadData);
 		fileName = '/var/lib/shipard-node/tmp/lan-device-'+payloadData['device']+'-iotBoxInfo.json';
 		fs.writeFileSync(fileName, iotBoxInfoDataStr, function (err) {
@@ -315,7 +314,26 @@ function doIbInfo(topic, message)
 		let cmd = 'shipard-node iot-box-info --file='+fileName;
 		//console.log(cmd);
 		exec(cmd, puts);
+		*/
 	}
+}
+
+function doDeviceInfo(devNdx, payloadData)
+{
+	let ibInfoData = payloadData;
+	ibInfoData['infoType'] = 'shn-ib-info';
+	ibInfoData['devNdx'] = devNdx;
+	ibInfoData['datetime'] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
+	let ibDataStr = JSON.stringify(ibInfoData);
+
+	let now = new Date().getTime();
+	let fileName = '/var/lib/shipard-node/upload/lan/iot-box-'+ibInfoData['devNdx']+'-'+'-'+now+'_'+Math.random()+'.json';
+
+	fs.writeFileSync(fileName, ibDataStr, function (err) {
+		if (err)
+			console.log(err);
+	});
 }
 
 function doSetup(topic, payload)
@@ -642,7 +660,7 @@ async function doEventOn(topic, payload)
 	}
 }
 
-function doDevice(topic, payload)
+function doDevice(devNdx, topic, payload)
 {
 	let payloadData = null;
 
@@ -652,6 +670,9 @@ function doDevice(topic, payload)
 		console.error(e);
 		return;
 	}
+
+	if (payloadData['pwr-batt-voltage'] !== undefined || payloadData['battery'] !== undefined || payloadData['linkquality'] !== undefined)
+		doDeviceInfo(devNdx, payloadData);
 
 	if (payloadData['action_group'] !== undefined)
 		return;
