@@ -286,9 +286,14 @@ function doIbInfo(topic, message)
 
 	if (payloadData['type'] === 'system')
 	{
-		var devNdx = payloadData['devNdx'] ?? 0;
+		var devNdx = 0;
+		if (payloadData['devNdx'] !== undefined)
+			devNdx = payloadData['devNdx'];
 		if (!devNdx)
-			devNdx = payloadData['device'] ?? 0; // historic firmware
+		{
+			if (payloadData['device'] !== undefined)
+				devNdx = payloadData['device']; // historic firmware
+		}
 		let ibInfoData = payloadData;
 		ibInfoData['infoType'] = 'shn-ib-info';
 		ibInfoData['devNdx'] = devNdx;
