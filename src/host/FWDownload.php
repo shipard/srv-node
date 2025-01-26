@@ -15,9 +15,11 @@ class FWDownload extends \Shipard\host\Core
 		'ib' => [
 			'title' => 'iot-boxes', 'fileMask' => '*.bin',
 		],
+		/*
 		'nextion' => [
 			'title' => 'nextion displays', 'fileMask' => '*.tft',
 		]
+		*/
 	];
 
 	var $channelsList = NULL;
@@ -68,62 +70,47 @@ class FWDownload extends \Shipard\host\Core
 
 	function downloadChannel($partId, $channelId)
 	{
-		$projects = $this->downloadCfgFile($this->baseUrl.$partId.'/'.$channelId.'/projects.json');
-		if (!$projects)
+		$remoteVersion = $this->downloadCfgFile($this->baseUrl.$partId.'/'.$channelId .'/'.'/version.json');
+		if ($remoteVersion === NULL)
+			return $this->app->err('project version error!');
+
+		if ($this->app->debug)
+			echo " " . $remoteVersion['version'] . '; ';
+
+		$localVersion = NULL;
+		$localDir = $this->localDir . '/' . $partId . '/' . $channelId . '/';
+		if (is_dir($localDir) && is_readable($localDir . 'version.json'))
 		{
-			echo "download projects failed!\n";
+			$localVersion = $this->app->loadCfgFile($localDir . 'version.json');
+		}
+
+		if ($localVersion && $localVersion['version'] === $remoteVersion['version'])
+		{
+			if ($this->app->debug)
+				echo "version exist\n";
+			return TRUE;
+		}
+
+		//echo "this is new version\n";
+
+		$files = $this->downloadCfgFile($this->baseUrl . $partId . '/' . $channelId . '/'.$remoteVersion['version'] . '/_files.json');
+		if (!$files)
 			return FALSE;
-		}
 
-		foreach ($projects as $projectId => $projectInfo)
+		foreach ($files['files'] as $fileInfo)
 		{
+			$fileUrl = $this->baseUrl.$partId.'/'.$channelId.'/'. $remoteVersion['version'].'/'.$fileInfo['fileName'];
+			$fileDir = $localDir.'/'.'/'.$remoteVersion['version'].'/';
 			if ($this->app->debug)
-				echo "### $projectId \n";
-
-			$remoteVersion = $this->downloadCfgFile($this->baseUrl.$partId.'/'.$channelId .'/'.$projectId.'/version.json');
-			if ($remoteVersion === NULL)
-				return $this->app->err('project version error!');
-
+				echo " * " . $fileInfo['fileName'];
+			$this->downloadFile($fileUrl, $fileDir, $fileInfo['fileName'], $fileInfo['sha1']);
 			if ($this->app->debug)
-				echo " " . $remoteVersion['version'] . '; ';
-
-			$localVersion = NULL;
-			$localDir = $this->localDir . '/' . $partId . '/' . $channelId . '/'.$projectId.'/';
-			if (is_dir($localDir) && is_readable($localDir . 'version.json'))
-			{
-				$localVersion = $this->app->loadCfgFile($localDir . 'version.json');
-			}
-
-			if ($localVersion && $localVersion['version'] === $remoteVersion['version'])
-			{
-				if ($this->app->debug)
-					echo "version exist\n";
-				return TRUE;
-			}
-
-			//echo "this is new version\n";
-
-			$files = $this->downloadCfgFile($this->baseUrl . $partId . '/' . $channelId . '/' . $projectId.'/'.$remoteVersion['version'] . '/files.json');
-			if (!$files)
-				return FALSE;
-
-			foreach ($files['files'] as $fileInfo)
-			{
-				$fileUrl = $this->baseUrl.$partId.'/'.$channelId.'/'.$projectId.'/'. $remoteVersion['version'].'/'.$fileInfo['fileName'];
-				$fileDir = $localDir.'/'.'/'.$remoteVersion['version'].'/';
-				if ($this->app->debug)
-					echo " * " . $fileInfo['fileName'];
-				$this->downloadFile($fileUrl, $fileDir, $fileInfo['fileName'], $fileInfo['sha1']);
-				if ($this->app->debug)
-					echo "\n";
-			}
-
-			file_put_contents($fileDir . 'files.json', json_encode($files, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-			file_put_contents($fileDir . 'version.json', json_encode($remoteVersion, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-			file_put_contents($localDir.'/version.json', json_encode($remoteVersion, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+				echo "\n";
 		}
 
-		file_put_contents($this->localDir . '/' . $partId . '/' . $channelId.'/projects.json', json_encode($projects, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		file_put_contents($fileDir . '_files.json', json_encode($files, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		file_put_contents($fileDir . 'version.json', json_encode($remoteVersion, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+		file_put_contents($localDir.'/version.json', json_encode($remoteVersion, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
 		return TRUE;
 	}
@@ -176,7 +163,7 @@ class FWDownload extends \Shipard\host\Core
 		$this->download('ib');
 
 		// -- nextion displays
-		$this->download('nextion');
+		//$this->download('nextion');
 
 		// -- shp-3rd-fw
 		$this->download3rd();
@@ -196,24 +183,23 @@ class FWDownload extends \Shipard\host\Core
 
 		foreach ($channels as $channelId)
 		{
-			$projects = $this->app->loadCfgFile($partDir.'/'.$channelId.'/projects.json');
-			foreach ($projects as $projectId => $projectCfg)
+			$versionCfg = $this->app->loadCfgFile($partDir.'/'.$channelId.'/'.'version.json');
+			$version = $versionCfg['version'];
+
+			$filesDir = $partDir.'/'.$channelId.'/'.$version.'/';
+			$filesCfg = $this->app->loadCfgFile($filesDir.'_files.json');
+			foreach ($filesCfg['files'] as $f)
 			{
-				$filesDir = $partDir.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/';
-				$filesCfg = $this->app->loadCfgFile($filesDir.'files.json');
-				foreach ($filesCfg['files'] as $f)
+				$fileName = $filesDir.$f['fileName'];
+				$baseName = $f['fileName'];
+				$fileSize = filesize($fileName);
+				$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$version.'/'.$baseName;
+				if ($partId === 'ib')
 				{
-					$fileName = $filesDir.$f['fileName'];
-					$baseName = $f['fileName'];
-					$fileSize = filesize($fileName);
-					$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/'.$baseName;
-					if ($partId === 'ib')
-					{
-						$list[$channelId][$f['fwId']] = [
-							'fileSize' => $fileSize,
-							'fileUrl' => 'http://'.$this->app->nodeCfg['cfg']['mqttServerIPV4'].'/'.$urlFileName,
-						];
-					}
+					$list[$channelId][$f['fwId']] = [
+						'fileSize' => $fileSize,
+						'fileUrl' => 'http://'.$this->app->nodeCfg['cfg']['mqttServerIPV4'].'/'.$urlFileName,
+					];
 				}
 			}
 		}
@@ -230,24 +216,25 @@ class FWDownload extends \Shipard\host\Core
 		if (intval($this->app->serverCfg['useLocalIBFW'] ?? 0) && $partId === 'ib')
 			$channels[] = 'local';
 
+		//echo "# channels [`$partDir`/channels.json]: ".json_encode($channels)."\n";
+
 		foreach ($channels as $channelId)
 		{
-			echo ' * '.$channelId."\n";
+			$versionCfg = $this->app->loadCfgFile($partDir.'/'.$channelId.'/'.'version.json');
+			$version = $versionCfg['version'];
 
-			$projects = $this->app->loadCfgFile($partDir.'/'.$channelId.'/projects.json');
-			foreach ($projects as $projectId => $projectCfg)
+			echo ' # '.$channelId.': '.$version.'; '.$versionCfg['timestamp']."\n";
+
+			$filesDir = $partDir.'/'.$channelId.'/'.$version.'/';
+			$filesCfg = $this->app->loadCfgFile($filesDir.'_files.json');
+
+			//echo $filesDir.$this->parts[$partId]['fileMask']."\n";
+			forEach (glob($filesDir.$this->parts[$partId]['fileMask']) as $fileName)
 			{
-				echo '   - '.$projectId.'; '.$projectCfg['version']."\n";
-
-				$filesDir = $partDir.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/';
-				//echo $filesDir.$this->parts[$partId]['fileMask']."\n";
-				forEach (glob($filesDir.$this->parts[$partId]['fileMask']) as $fileName)
-				{
-					$baseName = basename($fileName);
-					$fileSize = filesize($fileName);
-					$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$projectId.'/'.$projectCfg['version'].'/'.$baseName;
-					echo '       '.sprintf('% 8d', $fileSize).' '.$urlFileName."\n";
-				}
+				$baseName = basename($fileName);
+				$fileSize = filesize($fileName);
+				$urlFileName = 'fw/'.$partId.'/'.$channelId.'/'.$version.'/'.$baseName;
+				echo '       '.sprintf('% 8d', $fileSize).' '.$urlFileName."\n";
 			}
 		}
 		return TRUE;
